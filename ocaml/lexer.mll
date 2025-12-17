@@ -1,6 +1,6 @@
 {
 open Parser
-open Type
+(*open Type*)(*Note this part has been *)
 }
 
 let space = [' ' '\t' '\n' '\r']

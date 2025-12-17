@@ -53,7 +53,7 @@ let rec to_string exp =
   | LE (e1, e2) -> sprintf "(%s <= %s)" (to_string e1) (to_string e2)  
   | If (e1, e2, e3) -> 
           sprintf "(if %s then %s else %s)" (to_string e1) (to_string e2) (to_string e3)   
-  | Let ((id,t), e1, e2) -> 
+  | Let ((id,_), e1, e2) -> 
           sprintf "(let %s = %s in %s)" (Id.to_string id) (to_string e1) (to_string e2)   
   | Var id -> Id.to_string id 
   | App (e1, le2) -> sprintf "(%s %s)" (to_string e1) (infix_to_string to_string le2 " ") 
