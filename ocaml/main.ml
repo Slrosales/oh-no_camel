@@ -1,9 +1,10 @@
+
 (*option*)
 
 let output_file = ref None
 
 
-let usage_message = ""
+let _usage_message = ""
 let info_set = "TODO write info\n"
 let version = "v0.1"
 let verbose = ref false
@@ -24,6 +25,7 @@ let file f =
 
 
     (*k_normalization*)
+    K_normalization.k_normalization_function file_script;
 
     (*alpha_generation*)
     
@@ -51,9 +53,9 @@ let () =
   let files = ref [] in
   Arg.parse
     [("-o",Arg.String (fun (s) -> output_file := Some s ),"output file name");
-      ("-h",(print_string info_set;exit(0)),"helper");
-      ("-help",(print_string info_set;exit(0)),"helper");
-      ("-v",(print_string version;exit(0)),"Print version");
+      ("-h",Arg.Unit (fun () -> print_string info_set;exit(0)),"helper");
+      ("-help",Arg.Unit (fun ()-> print_string info_set;exit(0)),"helper");
+      ("-v",Arg.Unit (fun () -> print_string version;exit(0)),"Print version");
       ("-verbose",Arg.Set verbose,"Activate verbose");
       ("-t",Arg.Set type_check_only,"Only execute up to type checking");
       ("-p",Arg.Set parse_only ,"Only execute up to parsing");
