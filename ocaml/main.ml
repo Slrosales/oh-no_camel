@@ -1,4 +1,7 @@
-
+module Syntax = Core.Syntax
+module Parser = Core.Parser
+module Lexer = Core.Lexer
+open Frontend
 (*option*)
 
 let output_file = ref None
