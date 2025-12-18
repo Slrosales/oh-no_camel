@@ -1,5 +1,4 @@
 (*This test was made with the help of AI*)
-
 (* Compile with: ocamlc -o test_id syntax.cmo type.cmo id.cmo id_test.ml *)
 
 (* 1. Helper for assertions *)
