@@ -1,5 +1,7 @@
 type t = string
 
+type l = L of string 
+
 let to_string x = x
 
 let genid =
@@ -7,3 +9,6 @@ let genid =
   fun () ->
     incr counter;
     Printf.sprintf "?v%d" !counter
+
+let identifier (_typ : Type.t) : t =
+  genid ()
