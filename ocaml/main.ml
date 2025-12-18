@@ -1,3 +1,5 @@
+open Emit
+
 let print_ast l =
   print_string (Syntax.to_string (Parser.exp Lexer.token l)); print_newline ()
 
@@ -5,6 +7,7 @@ let file f =
   let inchan = open_in f in
   try
     print_ast (Lexing.from_channel inchan);
+    Emit.output_ARM ();
     close_in inchan
   with e -> (close_in inchan; raise e)
 
