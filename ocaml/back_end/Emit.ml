@@ -7,7 +7,7 @@ let main_section = "main:" (*main function label*)
 let c1 = "mov r0, #0" (*Storing 0 as a return value in register r0*)
 let c2 = "bx lr" (*Jumping to the address of the link register and returnning from the function*)
 
-let () =
+let output_ARM() =
  let oc = open_out file in
  Printf.fprintf oc "%s\n" text_section;
  Printf.fprintf oc "%s\n" g_main_section;
