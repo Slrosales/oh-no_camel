@@ -1,6 +1,6 @@
 
 all: 
-	ocamlbuild main.byte 
+	ocamlbuild -r -Is back_end main.byte 
 	mv main.byte mincamlc
 
 clean:
