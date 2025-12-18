@@ -28,8 +28,8 @@ let file f =
 
 
     (*k_normalization*)
-    K_normalization.k_normalization_function file_script;
-
+    let test_output_k = K_normalization.normalization_function file_script in
+     print_ast test_output_k;
     (*alpha_generation*)
     
     (*reduction of nested-let*)
