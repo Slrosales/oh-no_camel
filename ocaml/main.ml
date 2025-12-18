@@ -1,4 +1,5 @@
-
+open Syntax
+open K_normalization
 (*option*)
 
 let output_file = ref None
@@ -25,6 +26,18 @@ let file f =
 
 
     (*k_normalization*)
+    let () =
+        let expr =
+        Add (Int 1, Mul (Int 2, Int 3))
+        in 
+        let kn_expression = f expr in 
+        print_newline(kn_to_string kn_expr)
+
+
+
+
+
+        
     K_normalization.k_normalization_function file_script;
 
     (*alpha_generation*)
