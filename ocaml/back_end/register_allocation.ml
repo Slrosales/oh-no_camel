@@ -7,6 +7,8 @@ let main_section = "main:" (*main function label*)
 
 let output_ARM() =
 
+ let ic = open_in
+
  let oc = open_out output_file in
  Printf.fprintf oc "%s\n" text_section;
  Printf.fprintf oc "%s\n" g_main_section;
