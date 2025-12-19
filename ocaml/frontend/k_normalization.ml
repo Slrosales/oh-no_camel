@@ -10,8 +10,8 @@ let gen_var_tmp () = let var =  "tmp" ^ (string_of_int (!value)) in
 let add_let (v,before_in,after_in:(string * Type.t)*Syntax.t*Syntax.t):Syntax.t = Let (v,before_in,after_in)
 
 let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t with
-(**base case*)
-| Unit -> Unit
+(*base case*)
+| Unit -> Unit 
 | Bool b -> Bool b
 | Int i -> Int i
 | Float f -> Float f
