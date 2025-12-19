@@ -1,8 +1,7 @@
-let x1 = 1
-let x2 = 2
-let x3 = 1
-
 let _ =
+    let x1 = 1
+    let x2 = 2
+    let x3 = 1
     let r1 = x1 in
     let r2 = x2 in
     let r3 = x3 in
