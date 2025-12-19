@@ -11,9 +11,7 @@ let genid =
   fun () ->
     incr counter;
     Printf.sprintf "v%d" !counter
-<<<<<<< HEAD
-=======
 
 let gentmp (_typ : Type.t) : t =
   genid ()
->>>>>>> d035597ab8d2bd3a11b6f7dd312debbdc70888a2
+
