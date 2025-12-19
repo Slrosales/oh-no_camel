@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 open Syntax
 open K_normalization
+=======
+module Syntax = Core.Syntax
+module Parser = Core.Parser
+module Lexer = Core.Lexer
+open Frontend
+>>>>>>> d035597ab8d2bd3a11b6f7dd312debbdc70888a2
 (*option*)
 
 let output_file = ref None
@@ -26,6 +33,7 @@ let file f =
 
 
     (*k_normalization*)
+<<<<<<< HEAD
     let () =
         let expr =
         Add (Int 1, Mul (Int 2, Int 3))
@@ -40,6 +48,10 @@ let file f =
         
     K_normalization.k_normalization_function file_script;
 
+=======
+    let test_output_k = K_normalization.normalization_function file_script in
+     print_ast test_output_k;
+>>>>>>> d035597ab8d2bd3a11b6f7dd312debbdc70888a2
     (*alpha_generation*)
     
     (*reduction of nested-let*)
