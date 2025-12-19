@@ -1,8 +1,0 @@
-let _x1 = 1
-let _x2 = 2
-
-let _ =
-    let r1 = _x1 in
-    let r2 = _x2 in
-    let r3 = r1 + r2 in
-    call _min_caml_print_int r3 
