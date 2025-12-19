@@ -1,18 +1,13 @@
 module Syntax = Core.Syntax
 module Type =Core.Type
 let value = ref 0 
+let remember_var = ref []
 
 let gen_var_tmp () = let var =  "tmp" ^ (string_of_int (!value)) in 
   value := !value+1;
   var
 
-let is_a_base_case (t:Syntax.t):bool = match t with
-| Unit -> true
-| Int _ -> true
-| Bool _ -> true
-| Float _ -> true
-| _ -> false
-
+let add_let (v,before_in,after_in:(string * Type.t)*Syntax.t*Syntax.t):Syntax.t = Let (v,before_in,after_in)
 
 let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t with
 (**base case*)
@@ -26,15 +21,18 @@ let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t
 | Neg t -> Neg t (*to implement later*)
 | Add (l,r) -> (let new_var_left = gen_var_tmp () in 
                 let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    Add(Var new_var_left,Var new_var_right)))))
+                let after_in = Syntax.Add (Var new_var_left,Var new_var_right) in
+                add_let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),add_let((new_var_right,Type.gentyp ()),(normalization_function_rec r),after_in))
+                )
 | Sub (l , r) -> (let new_var_left = gen_var_tmp () in 
                 let new_var_right = gen_var_tmp () in
                 Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
                   Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
                     Sub(Var new_var_left,Var new_var_right)))))
-| FNeg t -> FNeg (normalization_function_rec (t)) (*to implement later*)
+
+| FNeg t -> (let new_var= gen_var_tmp () in
+  Let ((new_var, Type.gentyp()),normalization_function_rec (t), FNeg (Var new_var)))
+
 | FAdd (l , r) -> (let new_var_left = gen_var_tmp () in 
                 let new_var_right = gen_var_tmp () in
                 Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
@@ -65,8 +63,10 @@ let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t
                 Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
                   Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
                     LE(Var new_var_left,Var new_var_right)))))
-| If (c , then_ , else_ ) -> If (c , (normalization_function_rec then_) , (normalization_function_rec else_) ) (*to be implemented later*)
 | Let ( v , before_in , after_in) -> Let ( v , (normalization_function_rec before_in) , (normalization_function_rec after_in)) 
+
+| If (c , then_ , else_ ) -> If (c , (normalization_function_rec then_) , (normalization_function_rec else_) ) (*to be implemented later*)
+
 
 (*TODO Harde one to do *)
 | LetRec (fundef , t) -> LetRec (fundef , (normalization_function_rec t)) (*to implement later*)

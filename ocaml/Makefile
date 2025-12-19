@@ -1,6 +1,6 @@
 
 all: 
-	ocamlbuild -use-ocamlfind -r -Is frontend -Is back_end main.byte 
+	ocamlbuild  -use-ocamlfind -r -Is frontend -Is back_end main.byte 
 	mv main.byte mincamlc
 
 id_test:
