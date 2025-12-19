@@ -76,5 +76,6 @@ let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t
 | Array (l , r) ->  Array (l , r) (*to implement later*)
 | Get (l , r) -> Get (l , r) (*to implement later*)
 | Put (t1 , t2 , t3) -> Put (t1 , t2 , t3) (*to implement later*)
+
 let normalization_function (syntax_t:Syntax.t) = value := 0;
   normalization_function_rec syntax_t

@@ -31,7 +31,8 @@ let file f =
     let test_output_k = K_normalization.normalization_function file_script in
      print_ast test_output_k;
     (*alpha_generation*)
-    
+      let test_output_alpha = Alpha_conversion.alpha test_output_k in
+     print_ast test_output_alpha;
     (*reduction of nested-let*)
     
     (*closure conversion*)
