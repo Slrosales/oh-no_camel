@@ -1,6 +1,7 @@
-open Core.Syntax
-open K_normalization
 
+
+module Syntax = Core.Syntax
+module Id = Core.Id
 module Type = Core.Type
 module M = Map.Make(String)
 
@@ -8,7 +9,7 @@ let find x env =
   try M.find x env
   with Not_found -> x
 
-let rec alpha_rec env t =
+let rec alpha_rec (env) (t:Syntax.t):Syntax.t =
   match t with
   | Unit -> Unit
   | Int i -> Int i
