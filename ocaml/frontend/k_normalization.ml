@@ -63,18 +63,19 @@ let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t
                 Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
                   Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
                     LE(Var new_var_left,Var new_var_right)))))
+
 | Let ( v , before_in , after_in) -> Let ( v , (normalization_function_rec before_in) , (normalization_function_rec after_in)) 
 
-| If (c , then_ , else_ ) -> If (c , (normalization_function_rec then_) , (normalization_function_rec else_) ) (*to be implemented later*)
+| If (c , then_ , else_ ) ->let condition = normalization_function_rec(c) in 
+                            let cond_name = gen_var_tmp() in 
+                            add_let((cond_name,Type.Bool),condition,(If ( Var(cond_name) , (normalization_function_rec then_) , (normalization_function_rec else_) )))
 
-
-(*TODO Harde one to do *)
-| LetRec (fundef , t) -> LetRec (fundef , (normalization_function_rec t)) (*to implement later*)
-| App (e,l) -> App (e,l) (*to implement later*)
-| Tuple t_list  -> Tuple t_list (*to implement later*)
-| LetTuple ( l , t1 , t2) -> LetTuple (l , t1 , t2) (*to implement later*)
-| Array (l , r) ->  Array (l , r) (*to implement later*)
-| Get (l , r) -> Get (l , r) (*to implement later*)
-| Put (t1 , t2 , t3) -> Put (t1 , t2 , t3) (*to implement later*)
+| LetRec (fundef , t) -> LetRec (fundef , (normalization_function_rec t)) 
+| App (e,l) -> App (normalization_function_rec(e),List.map normalization_function_rec l ) 
+| Tuple t_list  -> Tuple (List.map normalization_function_rec t_list) 
+| LetTuple ( l , before_in , after_in) -> LetTuple (l , (normalization_function_rec before_in) , (normalization_function_rec after_in))
+| Array (l , r) ->  Array (normalization_function_rec(l) , normalization_function_rec(r)) (*to implement later*)
+| Get (l , r) -> Get (normalization_function_rec(l) , normalization_function_rec(r)) (*to implement later*)
+| Put (t1 , t2 , t3) -> Put (normalization_function_rec(t1) , normalization_function_rec(t2) , normalization_function_rec(t3)) (*to implement later*)
 let normalization_function (syntax_t:Syntax.t) = value := 0;
   normalization_function_rec syntax_t
