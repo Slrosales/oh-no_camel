@@ -1,3 +1,0 @@
-.text
-.global main
-main:
