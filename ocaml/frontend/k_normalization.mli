@@ -1,5 +1,7 @@
 module Syntax = Core.Syntax
 
-val remember_var:string list ref
+module IntSet : Set.OrderedType
+
+val remember_var: IntSet.t ref
 
 val normalization_function : Syntax.t -> Syntax.t
