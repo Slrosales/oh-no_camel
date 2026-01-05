@@ -1,0 +1,11 @@
+let x = 10 in
+let y = 20 in
+let result = 
+  if x <= y then
+    let tmp_then = x + 5 in
+    tmp_then
+  else
+    let tmp_else = y - 5 in
+    tmp_else
+in
+result
