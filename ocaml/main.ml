@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-open Emit
-
-=======
 module Syntax = Core.Syntax
 module Parser = Core.Parser
 module Lexer = Core.Lexer
@@ -21,17 +17,12 @@ let output_asml = ref false
 let output_asml_file=ref None
 let asml_only = ref false
 (*code*)
->>>>>>> 935b25cbf70d15a28b0bc0bb90bacfcb23e33491
 let print_ast l =
   print_string (Syntax.to_string l); print_newline ()
 
 let file f = 
   let inchan = open_in f in
   try
-<<<<<<< HEAD
-    print_ast (Lexing.from_channel inchan);
-    Emit.output_ARM ();
-=======
     let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
     print_ast file_script;
 
@@ -56,7 +47,6 @@ let file f =
     (*ARM allocation*)
     
 
->>>>>>> 935b25cbf70d15a28b0bc0bb90bacfcb23e33491
     close_in inchan
 
 
