@@ -82,65 +82,101 @@ let rec assembly_maker oc = function
 
 
 
-open Syntax
+open Asml
 
 let stack_map = Hashtbl.create 50 
 let stack_next = ref (-4)
 
 let reset_stack () = Hashtbl.clear stack_map; stack_next := -4 
 
-let push_stack id =
+let push_stack (IDENT id) =
   if not (Hashtbl.mem stack_map id) then (
     Hashtbl.add stack_map id !stack_next;
     stack_next := !stack_next - 4 
   )
 
-let find_index id =  
+let find_index (IDENT id) =  
   try Hashtbl.find stack_map id  
-  with Not_found -> failwith ("Variable not found!")
+  with Not_found -> failwith ("Variable not found: " ^ (Id.to_string id))
 
-let rec assembly_maker oc exp = 
-  match exp with
-    | Int(i) ->
-        if i > 255 then Printf.fprintf oc "\tldr r0, =%d\n" i
-        else Printf.fprintf oc "\tmov r0, #%d\n" i
+(* 1. Helper to load 'ident' types (could be INT or IDENT) into a register *)
+let load_ident oc id reg =
+  match id with
+  | INT i -> 
+      if i > 255 then Printf.fprintf oc "\tldr %s, =%d\n" reg i
+      else Printf.fprintf oc "\tmov %s, #%d\n" reg i
+  | IDENT _ as id_obj ->
+      let index = find_index id_obj in
+      Printf.fprintf oc "\tldr %s, [fp, #%d]\n" reg index
 
-    | Var(id) ->
-        let index = find_index id in
-        Printf.fprintf oc "\tldr r0, [fp, #%d]\n" index
+(* 2. Helper to evaluate basic expressions - Result always goes to r0 *)
+let rec emit_exp oc = function
+  | Int i -> 
+      if i > 255 then Printf.fprintf oc "\tldr r0, =%d\n" i
+      else Printf.fprintf oc "\tmov r0, #%d\n" i
+  | Var id -> 
+      load_ident oc (IDENT id) "r0"
+  | Neg id ->
+      load_ident oc (IDENT id) "r0";
+      Printf.fprintf oc "\trsb r0, r0, #0\n"
+  | Add (id1, id2) ->
+      load_ident oc (IDENT id1) "r0";
+      load_ident oc id2 "r1";
+      Printf.fprintf oc "\tadd r0, r0, r1\n"
+  | Sub (id1, id2) ->
+      load_ident oc (IDENT id1) "r0";
+      load_ident oc id2 "r1";
+      Printf.fprintf oc "\tsub r0, r0, r1\n"
+  | FMul (id1, id2) ->
+      load_ident oc (IDENT id1) "r0";
+      load_ident oc (IDENT id2) "r1";
+      Printf.fprintf oc "\tmul r0, r0, r1\n"
+  | If (id1, cond, id2, then_asmt, else_asmt) ->
+      let label_id = Id.to_string (Id.genid ()) in
+      let else_lbl = ".L_else_" ^ label_id in
+      let exit_lbl = ".L_exit_" ^ label_id in
+      load_ident oc (IDENT id1) "r0";
+      load_ident oc id2 "r1";
+      Printf.fprintf oc "\tcmp r0, r1\n";
+      let branch = match cond with 
+        | EQ -> "bne" | LE -> "bgt" | GE -> "blt" | _ -> "bne" in
+      Printf.fprintf oc "\t%s %s\n" branch else_lbl;
+      emit_asmt oc then_asmt;
+      Printf.fprintf oc "\tb %s\n%s:\n" exit_lbl else_lbl;
+      emit_asmt oc else_asmt;
+      Printf.fprintf oc "%s:\n" exit_lbl
+  | _ -> failwith "Expression type not implemented"
 
-    | Let((id, _typ), e1, e2) -> 
-        assembly_maker oc e1;
-        push_stack id;
-        let index = find_index id in
-        Printf.fprintf oc "\tstr r0, [fp, #%d]\n" index;
-        assembly_maker oc e2
+(* 3. Handle the sequence of LET assignments *)
+and emit_asmt oc = function
+  | LET (id, e, next) ->
+      emit_exp oc e;
+      push_stack id;
+      let index = find_index id in
+      Printf.fprintf oc "\tstr r0, [fp, #%d]\n" index;
+      emit_asmt oc next
+  | EXP e -> emit_exp oc e
 
-    | Add(e1, e2) -> 
-
-        assembly_maker oc e1;
-        Printf.fprintf oc "\tpush {r0}\n"; 
-        assembly_maker oc e2;
-        Printf.fprintf oc "\tmov r1, r0\n";
-        Printf.fprintf oc "\tpop {r0}\n";
-        Printf.fprintf oc "\tadd r0, r0, r1\n"
-
-    | Sub(e1, e2) -> 
-
-        assembly_maker oc e1;
-        Printf.fprintf oc "\tpush {r0}\n"; 
-        assembly_maker oc e2;
-        Printf.fprintf oc "\tmov r1, r0\n";
-        Printf.fprintf oc "\tpop {r0}\n";
-        Printf.fprintf oc "\tsub r0, r0, r1\n"
-
-
-    | _ -> failwith "Instruction not implemented yet"
-
-let generate_function oc (id, _typ) body =
-  reset_stack ();
-  let name = Id.to_string id in
-  Printf.fprintf oc ".global %s\n%s:\n" name name;
-  Printf.fprintf oc "\tpush {fp, lr}\n\tadd fp, sp, #4\n\tsub sp, sp, #128\n";
-  assembly_maker oc body;
-  Printf.fprintf oc "\tsub sp, fp, #4\n\tpop {fp, pc}\n"
+(* 4. Handle the Toplevel Program (Functions and Main) *)
+let rec emit_toplevel oc = function
+  | Main asmt ->
+      Printf.fprintf oc ".global main\nmain:\n";
+      Printf.fprintf oc "\tpush {fp, lr}\n\tadd fp, sp, #4\n\tsub sp, sp, #128\n";
+      reset_stack ();
+      emit_asmt oc asmt;
+      Printf.fprintf oc "\tsub sp, fp, #4\n\tpop {fp, pc}\n"
+  | Function (func, rest) ->
+      let (IDENT name) = func.name in
+      Printf.fprintf oc ".global %s\n%s:\n" (Id.to_string name) (Id.to_string name);
+      Printf.fprintf oc "\tpush {fp, lr}\n\tadd fp, sp, #4\n\tsub sp, sp, #128\n";
+      reset_stack ();
+      (* Save arguments from r0, r1, r2... to the stack *)
+      List.iteri (fun i arg_id ->
+        push_stack arg_id;
+        let index = find_index arg_id in
+        Printf.fprintf oc "\tstr r%d, [fp, #%d]\n" i index
+      ) func.args;
+      emit_asmt oc func.body;
+      Printf.fprintf oc "\tsub sp, fp, #4\n\tpop {fp, pc}\n";
+      emit_toplevel oc rest
+  | _ -> ()
