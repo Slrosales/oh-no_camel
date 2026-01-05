@@ -1,5 +1,24 @@
-module Syntax = Core.Syntax
+type t =
+  | Unit 
+  | Int of int 
+  | Not of Id.t
+  | Neg of Id.t
+  | Add of Id.t * Id.t
+  | Sub of Id.t * Id.t
+  | IfEq of Id.t * Id.t * t * t 
+  | IfLE of Id.t * Id.t * t * t 
+  | Let of (Id.t * Type.t) * t * t
+  | Var of Id.t
+  | LetRec of fundef * t
+  | App of Id.t * Id.t list
+  | Tuple of Id.t list
+  | LetTuple of (Id.t * Type.t) list * Id.t * t
+  | Get of Id.t * Id.t
+  | Put of Id.t * Id.t * Id.t
+  | ExtArray of Id.t
+  | ExtFunApp of Id.t * Id.t list
+and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-val remember_var:string list ref
+val f : Syntax.t -> t
 
-val normalization_function : Syntax.t -> Syntax.t
+val to_string : t -> string

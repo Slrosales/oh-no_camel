@@ -1,81 +1,149 @@
-module Syntax = Core.Syntax
-module Type =Core.Type
-let value = ref 0 
-let remember_var = ref []
+module Type = Type 
 
-let gen_var_tmp () = let var =  "tmp" ^ (string_of_int (!value)) in 
-  value := !value+1;
-  var
+type t =
+  | Unit
+  | Int of int
+  | Not of Id.t
+  | Neg of Id.t
+  | Add of Id.t * Id.t
+  | Sub of Id.t * Id.t
+  | IfEq of Id.t * Id.t * t * t (* Syntax.If + Syntax.Eq *)
+  | IfLE of Id.t * Id.t * t * t (* Syntax.If + Syntax.LE *)
+  | Let of (Id.t * Type.t) * t * t
+  | Var of Id.t
+  | LetRec of fundef * t
+  | App of Id.t * Id.t list
+  | Tuple of Id.t list
+  | LetTuple of (Id.t * Type.t) list * Id.t * t
+  | Get of Id.t * Id.t
+  | Put of Id.t * Id.t * Id.t
+  | ExtArray of Id.t (* External Array - Ray Tracer benchmark*)
+  | ExtFunApp of Id.t * Id.t list (* External Function Application - Library func*)
+and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-let add_let (v,before_in,after_in:(string * Type.t)*Syntax.t*Syntax.t):Syntax.t = Let (v,before_in,after_in)
+(* Helper to guess types *)
+let rec type_of (e : t) : Type.t =
+  match e with
+  | Unit -> Type.Unit
+  | Int _ -> Type.Int
+  | Not _ | Neg _ | Add _ | Sub _ -> Type.Int
+  | IfEq (_, _, e1, _) | IfLE (_, _, e1, _) -> type_of e1 
+  | Let (_, _, e2) -> type_of e2 
+  | Var _ -> Type.Int 
+  | _ -> Type.Unit 
 
-let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t with
-(*base case*)
-| Unit -> Unit 
-| Bool b -> Bool b
-| Int i -> Int i
-| Float f -> Float f
-| Var id -> Var id (*to implement later*)
-(*recusive case*)
-| Not t -> Not t (*to implement later*)
-| Neg t -> Neg t (*to implement later*)
-| Add (l,r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                let after_in = Syntax.Add (Var new_var_left,Var new_var_right) in
-                add_let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),add_let((new_var_right,Type.gentyp ()),(normalization_function_rec r),after_in))
-                )
-| Sub (l , r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    Sub(Var new_var_left,Var new_var_right)))))
+let rec insert_let (e : t) (k : Id.t -> t) : t =
+  match e with
+  | Var x -> k x
+  | Let ((x, t), e1, e2) -> 
+      Let ((x, t), e1, insert_let e2 k)
+  | _ ->
+      let ty = type_of e in
+      let x = Id.gentmp ty in
+      Let ((x, ty), e, k x)
 
-| FNeg t -> (let new_var= gen_var_tmp () in
-  Let ((new_var, Type.gentyp()),normalization_function_rec (t), FNeg (Var new_var)))
+let rec f (e : Syntax.t) : t =
+  match e with
+  | Syntax.Unit -> Unit
+  | Syntax.Bool b -> Int (if b then 1 else 0) (* Syntax.Bool -> KNormal.Int *)
+  | Syntax.Int i -> Int i
+  | Syntax.Var x -> Var x
+  
+  | Syntax.Not e ->
+      insert_let (f e) (fun x -> Not x)
 
-| FAdd (l , r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    FAdd(Var new_var_left,Var new_var_right)))))
-| FSub (l,r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    FSub(Var new_var_left,Var new_var_right)))))
-| FMul (l , r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    FMul(Var new_var_left,Var new_var_right))))) 
-| FDiv (l , r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    FDiv(Var new_var_left,Var new_var_right))))) 
-| Eq (l , r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    Eq(Var new_var_left,Var new_var_right)))))
-| LE (l , r) -> (let new_var_left = gen_var_tmp () in 
-                let new_var_right = gen_var_tmp () in
-                Let ((new_var_left, Type.gentyp ()),(normalization_function_rec l),(
-                  Let ((new_var_right,Type.gentyp ()),(normalization_function_rec r),
-                    LE(Var new_var_left,Var new_var_right)))))
-| Let ( v , before_in , after_in) -> Let ( v , (normalization_function_rec before_in) , (normalization_function_rec after_in)) 
+  | Syntax.Neg e ->
+      insert_let (f e) (fun x -> Neg x)
 
-| If (c , then_ , else_ ) -> If (c , (normalization_function_rec then_) , (normalization_function_rec else_) ) (*to be implemented later*)
+  | Syntax.Add (e1, e2) ->
+      insert_let (f e1) (fun x ->
+        insert_let (f e2) (fun y ->
+          Add(x, y)))
 
+  | Syntax.Sub (e1, e2) ->
+      insert_let (f e1) (fun x ->
+        insert_let (f e2) (fun y ->
+          Sub(x, y)))
 
-(*TODO Harde one to do *)
-| LetRec (fundef , t) -> LetRec (fundef , (normalization_function_rec t)) (*to implement later*)
-| App (e,l) -> App (e,l) (*to implement later*)
-| Tuple t_list  -> Tuple t_list (*to implement later*)
-| LetTuple ( l , t1 , t2) -> LetTuple (l , t1 , t2) (*to implement later*)
-| Array (l , r) ->  Array (l , r) (*to implement later*)
-| Get (l , r) -> Get (l , r) (*to implement later*)
-| Put (t1 , t2 , t3) -> Put (t1 , t2 , t3) (*to implement later*)
+(* 'if e1 then e2 else e3', we check what e1 is *)
+| Syntax.If (e1, e2, e3) ->
+  (match e1 with 
+  | Syntax.Not e -> f (Syntax.If (e, e3, e2))
+  
+  | Syntax.Eq (e_left, e_right) ->
+    insert_let (f e_left) (fun x ->
+      insert_let (f e_right) (fun (y) -> 
+        IfEq(x, y, f e2, f e3)))
 
-let normalization_function (syntax_t:Syntax.t) = value := 0;
-  normalization_function_rec syntax_t
+  | Syntax.LE (e_left, e_right) ->
+      insert_let (f e_left) (fun x ->
+        insert_let (f e_right) (fun y ->
+          IfLE(x, y, f e2, f e3)))
+
+  | _ -> 
+      (* if x then ...' (Implicit boolean check) *)
+      (* Treated as 'if x = 0 (false) then else_block else then_block' *)
+      insert_let (f e1) (fun x ->
+          insert_let (Int 0) (fun zero ->
+            (* If x = 0 (False), go e3. Else e2. *)
+            IfEq(x, zero, f e3, f e2)
+          )
+      )
+  )  
+
+  | Syntax.Let ((x, t), e1, e2) ->
+      Let ((x, t), f e1, f e2)
+
+  | Syntax.App (e, args) ->
+      insert_let (f e) (fun f_var ->
+        let rec bind_args args k =
+          match args with
+          | [] -> k []
+          | a :: rest -> 
+              insert_let (f a) (fun x ->
+                bind_args rest (fun xs -> k (x :: xs)))
+        in
+        bind_args args (fun x_list -> App(f_var, x_list))
+      )
+
+  (* Explicitly ignore Floats and unsupported types *)
+  | Syntax.Float _ | Syntax.FNeg _ | Syntax.FAdd _ | Syntax.FSub _ | Syntax.FMul _ | Syntax.FDiv _ -> 
+      failwith "Float operations not supported."
+  | Syntax.Eq _ | Syntax.LE _ -> 
+      failwith "Comparisons (Eq/LE) are only supported inside 'if' statements."
+
+  | _ -> Unit (* IMPLEMENT LATER Tuples/Arrays later *)
+        
+let rec to_string = function
+  | Unit -> "()"
+  | Int i -> string_of_int i
+  | Not x -> Printf.sprintf "not %s" x
+  | Neg x -> Printf.sprintf "-(%s)" x
+  | Add (x, y) -> Printf.sprintf "%s + %s" x y
+  | Sub (x, y) -> Printf.sprintf "%s - %s" x y
+  | Var x -> x
+  | IfEq (x, y, e1, e2) ->
+      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" 
+        x y (to_string e1) (to_string e2)
+  | IfLE (x, y, e1, e2) ->
+      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" 
+        x y (to_string e1) (to_string e2)
+  | Let ((x, _), e1, e2) -> 
+      Printf.sprintf "let %s = %s in\n%s" x (to_string e1) (to_string e2)
+  | LetRec (fundef, e) ->
+      Printf.sprintf "let rec %s(%s) =\n  %s\nin\n%s" 
+        (fst fundef.name)
+        (String.concat ", " (List.map (fun (name, _) -> name) fundef.args))
+        (to_string fundef.body)
+        (to_string e)
+  | App (f, args) ->
+      Printf.sprintf "%s(%s)" f (String.concat ", " args)
+  | Tuple vars -> 
+      Printf.sprintf "(%s)" (String.concat ", " vars)
+  | LetTuple (vars, y, e) -> 
+      Printf.sprintf "let (%s) = %s in\n%s" 
+        (String.concat ", " (List.map fst vars)) y (to_string e)
+  | Get (x, y) -> Printf.sprintf "%s.(%s)" x y
+  | Put (x, y, z) -> Printf.sprintf "%s.(%s) <- %s" x y z
+  | ExtArray x -> Printf.sprintf "ExtArray(%s)" x
+  | ExtFunApp (f, args) -> Printf.sprintf "ExtCall %s(%s)" f (String.concat " " args)
