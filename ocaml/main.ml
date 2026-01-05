@@ -1,46 +1,76 @@
-open Emit
+module Syntax = Core.Syntax
+module Parser = Core.Parser
+module Lexer = Core.Lexer
+open Frontend
+(*option*)
 
-(* let print_ast l =
-  print_string (Syntax.to_string (Parser.exp Lexer.token l)); print_newline ()
+let output_file = ref None
+
+
+let _usage_message = ""
+let info_set = "TODO write info\n"
+let version = "v0.1"
+let verbose = ref false
+let type_check_only = ref false
+let parse_only = ref false
+let output_asml = ref false
+let output_asml_file=ref None
+let asml_only = ref false
+(*code*)
+let print_ast l =
+  print_string (Syntax.to_string l); print_newline ()
 
 let file f = 
   let inchan = open_in f in
   try
-    print_ast (Lexing.from_channel inchan);
+    let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
+    print_ast file_script;
 
-    close_out oc;
-    (* Emit.output_ARM (); *)
+
+    (*k_normalization*)
+    let test_output_k = K_normalization.normalization_function file_script in
+     print_ast test_output_k;
+    (*alpha_generation*)
+    
+    (*reduction of nested-let*)
+    
+    (*closure conversion*)
+
+    (*ASML generation*)
+
+    (*other transformations*)
+
+    (*Take care of input asml here*)
+
+    (*Register allocation*)
+
+    (*ARM allocation*)
+    
+
+    close_in inchan
+
+
   with e -> (close_in inchan; raise e)
 
 let () = 
   let files = ref [] in
   Arg.parse
-    [ ]
+    [("-o",Arg.String (fun (s) -> output_file := Some s ),"output file name");
+      ("-h",Arg.Unit (fun () -> print_string info_set;exit(0)),"helper");
+      ("-help",Arg.Unit (fun ()-> print_string info_set;exit(0)),"helper");
+      ("-v",Arg.Unit (fun () -> print_string version;exit(0)),"Print version");
+      ("-verbose",Arg.Set verbose,"Activate verbose");
+      ("-t",Arg.Set type_check_only,"Only execute up to type checking");
+      ("-p",Arg.Set parse_only ,"Only execute up to parsing");
+      ("-asml",Arg.Set output_asml,"Produce asml_output_file");
+      ("-asml_output",Arg.String (fun (s) -> output_asml_file := Some s ),"output asml file name");
+      ("-asml_only",Arg.Set asml_only,"Only execute upt to asml")]
     (fun s -> files := !files @ [s])
-    (Printf.sprintf "usage: %s filenames" Sys.argv.(0));
-  List.iter
-    (fun f -> ignore (file f))
-    !files *)
+    (Printf.sprintf "usage: %s [-h/-help] [-v] [-verbose] [-t] [-p] [-asml] [-asml_only] [-asml_output output_asml_file] [-o output_file] filenames" Sys.argv.(0));
+  
+  
+  
+    List.iter
+    (fun f -> ignore (file f)) 
+    !files
 
-
-let file f = 
-  let inchan = open_in f in
-  print_endline ("Reading file: " ^ f);
-  try
-    let lexbuf = Lexing.from_channel inchan in
-    let ast = Parser.exp Lexer.token lexbuf in 
-    let oc = open_out "output.s" in
-    
-
-    Emit.generate_function oc (Id.genid (), Type.Int) ast;
-    close_out oc;
-    close_in inchan;
-    print_endline "Success! Check output.s"
-  with e -> (close_in inchan; raise e)
-
-
-let () = 
-  if Array.length Sys.argv > 1 then
-    file Sys.argv.(1)
-  else
-    print_endline "Usage: ./mincamlc <filename>"
