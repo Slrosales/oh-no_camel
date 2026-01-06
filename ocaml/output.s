@@ -8,22 +8,22 @@ main:
 	str r0, [fp, #-4]
 	mov r0, #20
 	str r0, [fp, #-8]
+	mov r0, #30
+	str r0, [fp, #-12]
+	mov r0, #5
+	str r0, [fp, #-16]
 	ldr r0, [fp, #-4]
 	ldr r1, [fp, #-8]
-	cmp r0, r1
-	bgt _else_9344
-	mov r0, #5
-	str r0, [fp, #-12]
-	str r0, [fp, #-16]
-	ldr r0, [fp, #-16]
-	b _end_9344
-_else_9344:
-	mov r0, #5
-	str r0, [fp, #-12]
+	bl add
 	str r0, [fp, #-20]
-	ldr r0, [fp, #-20]
-_end_9344:
+	ldr r0, [fp, #-12]
+	ldr r1, [fp, #-16]
+	bl add
 	str r0, [fp, #-24]
-	ldr r0, [fp, #-24]
+	ldr r0, [fp, #-20]
+	ldr r1, [fp, #-24]
+	bl add
+	str r0, [fp, #-28]
+	ldr r0, [fp, #-28]
 	sub sp, fp, #4
 	pop {fp, pc}

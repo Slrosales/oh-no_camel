@@ -16,11 +16,11 @@ let rec translate_to_asml = function
   | Syntax.Add(e1, e2) ->
         let id1 = match e1 with 
           | Syntax.Var i -> i 
-          | _ -> failwith "LHS of add must be a variable" in
+          | _ -> failwith "LHS of add intruction must be a variable" in
         let v2 = match e2 with
           | Syntax.Var i -> IDENT i
           | Syntax.Int i -> INT i 
-          | _ -> failwith "RHS of add must be variable or integer" in
+          | _ -> failwith "RHS of add instruction must be variable or integer" in
         EXP(Add(id1, v2))
         
 
@@ -29,9 +29,19 @@ let rec translate_to_asml = function
       let v2 = match e2 with Syntax.Var i -> IDENT i | Syntax.Int i -> INT i | _ -> failwith "RHS error" in
       EXP(Sub(id1, v2))
 
+  | Syntax.App(Syntax.Var "call", [Syntax.Var func; Syntax.Var arg]) ->
+      EXP(Call(func, [arg]))
+
   | Syntax.App(Syntax.Var f, args) ->
       let arg_ids = List.map (function Syntax.Var i -> i | _ -> failwith "Args must be vars") args in
       EXP(Call(f, arg_ids))
+
+  | Syntax.Let(("_", _), e1, e2) ->
+      let asml_e1 = translate_to_asml e1 in
+      let asml_e2 = translate_to_asml e2 in
+      (match asml_e1 with
+      | EXP e -> concat_asmt (EXP e) asml_e2
+      | LET _ as a -> concat_asmt a asml_e2)
 
 
   | Syntax.If(Syntax.LE(Syntax.Var id1, Syntax.Var id2), e1, e2) -> 
@@ -52,6 +62,8 @@ let rec translate_to_asml = function
            in
            bind_last asml_e1)
 
+
+  (* Failure statement that will be replaced later *)
   | e -> failwith ("Unsupported Syntax: " ^ (Syntax.to_string e))
 
   
@@ -102,9 +114,9 @@ let rec emit_exp oc = function
         Printf.fprintf oc "\tvmov r0, s2\n"
 
   | If(id1, cond, v2, then_asmt, else_asmt) ->
-        let lbl_id = string_of_int (Random.int 10000) in
-        let else_lbl = "_else_" ^ lbl_id in
-        let end_lbl = "_end_" ^ lbl_id in
+        let label_id = string_of_int (Random.int 10000) in
+        let else_lbl = "_else_" ^ label_id in
+        let end_lbl = "_end_" ^ label_id in
         
 
         Printf.fprintf oc "\tldr r0, [fp, #%d]\n" (get_off id1);
@@ -125,7 +137,14 @@ let rec emit_exp oc = function
 
         Printf.fprintf oc "%s:\n" end_lbl
 
-  
+
+  | Call(func_name, arg_ids) ->
+      List.iteri (fun i arg_id ->
+        if i < 4 then
+          let reg = "r" ^ (string_of_int i) in
+          Printf.fprintf oc "\tldr %s, [fp, #%d]\n" reg (get_off arg_id)
+      ) arg_ids;
+      Printf.fprintf oc "\tbl %s\n" func_name
 
   | _ -> ()
 
