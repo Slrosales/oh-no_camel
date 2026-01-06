@@ -74,8 +74,10 @@ let rec f (e : Syntax.t) : t =
                   IfEq (x, zero, f e3, f e2))))
   (* Rename variables following v0, v1...vn order*)
   | Syntax.Let ((x, t), e1, e2) ->
-      let normalized_e1 = f e1 in      (* Force e1 to run first *)
-      let normalized_e2 = f e2 in      (* Then e2 *)
+      let normalized_e1 = f e1 in
+      (* Force e1 to run first *)
+      let normalized_e2 = f e2 in
+      (* Then e2 *)
       Let ((x, t), normalized_e1, normalized_e2)
   | Syntax.App (e, args) ->
       insert_let (f e) (fun f_var ->
