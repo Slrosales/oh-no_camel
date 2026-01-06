@@ -23,6 +23,8 @@ let rec alpha_rec (env) (t:Syntax.t):Syntax.t =
   | FSub (x, y) -> FSub (alpha_rec env x, alpha_rec env y)
   | FMul (x, y) -> FMul (alpha_rec env x, alpha_rec env y)
   | FDiv (x, y) -> FDiv (alpha_rec env x, alpha_rec env y)
+  | App (e, args) -> App (alpha_rec env e, List.map (alpha_rec env) args)
+
   | Let ((v, t), e1, e2) ->
       let v' = Id.genid () in
       Let ((v', t),
