@@ -1,42 +1,106 @@
-type Id = 
-| INT
-| IDENT
+(* type ident = 
+| INT of int
+| IDENT of Id.t
 
-type t =
+type condition =
+| EQ
+| LE
+| GE
+| FEQ
+| FLE
+
+type exp =
+| NOP
 | Float of float
 | Int of int
 | Bool of bool
-| Neg of Id.t
-| FNeg of Id.t
-| If of Id.t * Id.t * Id.t * Id.t * Id.t
-| Let of Id.t * t * t
-| Let of t (**main let _**)
-| Var of Id.t
-| Add of Id.t * Id.t
-| Sub of Id.t * Id.t
-| FAdd of Id.t * Id.t
-| FSub of Id.t * Id.t
-| FMul of Id.t * Id.t
-| FDiv of Id.t * Id.t
-| Assign of Id.t * Id.t
-| Equal of Id.t * Id.t
-| LE of Id.t * Id.t
-| GE of Id.t * Id.t
-| FEqual of Id.t * Id.t
-| FLE of Id.t * Id.t
-| Mem of Id.t * int
-| Call of Id.t * Id.t list
-| New of Id.t 
+| Var of IDENT
+| Neg of IDENT
+| FNeg of IDENT
+| FAdd of IDENT * IDENT
+| FSub of IDENT * IDENT
+| FMul of IDENT * IDENT
+| FDiv of IDENT * IDENT
+| New of ident
+| Add of IDENT * ident
+| Sub of IDENT * ident
+| MemLoad of IDENT * int
+| Memstore of IDENT * int * IDENT
+| If of IDENT * condition * ident * asmt * asmt 
+| Call of IDENT * IDENT list
+| Callclo of IDENT * IDENT list
+and asmt =
+| LET of IDENT * exp * asmt
+| EXP of exp *)
 
 
- 
-type fun = {
-  name : Id.t;
-  args : Id.t list;
-  body : t;
+
+(* type letfun = {
+  name : IDENT;
+  args : IDENT list;
+  body : asmt;
 }
+type letfloat = { 
+  name : IDENT;
+  args : IDENT list;
+  body : asmt;
+} 
 
-type prog = {- 
-  fun_list : fun list;
-  main : t;
+type fundef = 
+| Main of asmt
+| Letfloat of letfloat * fundef
+| Function of letfun * fundef
+
+type toplevel = fundef *)
+
+
+(* OCaml types MUST be lowercase *)
+type ident_t = Id.t 
+
+type ident = 
+  | INT of int
+  | IDENT of ident_t
+
+type condition = EQ | LE | GE | FEQ | FLE
+
+type exp =
+  | NOP
+  | Float of float
+  | Int of int
+  | Bool of bool
+  | Var of ident_t
+  | Neg of ident_t
+  | FNeg of ident_t
+  | FAdd of ident_t * ident_t
+  | FSub of ident_t * ident_t
+  | FMul of ident_t * ident_t
+  | FDiv of ident_t * ident_t
+  | New of ident
+  | Add of ident_t * ident
+  | Sub of ident_t * ident
+  | MemLoad of ident_t * int
+  | Memstore of ident_t * int * ident_t
+  | If of ident_t * condition * ident * asmt * asmt 
+  | Call of ident_t * ident_t list
+  | Callclo of ident_t * ident_t list
+and asmt =
+  | LET of ident_t * exp * asmt
+  | EXP of exp
+
+type letfun = {
+  name : ident_t;
+  args : ident_t list;
+  body : asmt;
 }
+type letfloat = { 
+  name : ident_t;
+  args : ident_t list;
+  body : asmt;
+} 
+
+type fundef = 
+  | Main of asmt
+  | Letfloat of letfloat * fundef
+  | Function of letfun * fundef
+
+type toplevel = fundef

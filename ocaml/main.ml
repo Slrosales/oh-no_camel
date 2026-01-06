@@ -20,6 +20,9 @@ let asml_only = ref false
 let print_ast l =
   print_string (Syntax.to_string l); print_newline ()
 
+
+
+
 let file f = 
   let inchan = open_in f in
   try
@@ -44,10 +47,16 @@ let file f =
 
     (*Register allocation*)
 
-    (*ARM allocation*)
-    
+    (* Register allocation / ARM allocation *)
+    let arm_name = match !output_file with Some s -> s | None -> "output.s" in
+    let oc = open_out arm_name in
 
-    close_in inchan
+
+    Register_allocation.generate_assembly oc test_output_k;
+        
+
+    close_in inchan;
+    Printf.printf "Successfully compiled %s to %s\n" f arm_name
 
 
   with e -> (close_in inchan; raise e)
