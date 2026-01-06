@@ -1,4 +1,7 @@
-let x = 100 in
-let y = 50 in
-let z = 10 in
-(x - y) + (z - 5)
+let main =
+  let x = 100 in
+  let y = 50 in
+  let z = 10 in
+  let tmp1 = sub x y in
+  let tmp2 = sub z 5 in
+  add tmp1 tmp2

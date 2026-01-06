@@ -1,0 +1,2 @@
+let x = 0 in
+_min_caml_print_int x
