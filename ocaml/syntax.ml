@@ -26,6 +26,8 @@ type t =
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
+
+
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string = 

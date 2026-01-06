@@ -67,10 +67,22 @@ let rec normalization_function_rec (syntax_t:Syntax.t):Syntax.t = match syntax_t
 
 | If (c , then_ , else_ ) -> If (c , (normalization_function_rec then_) , (normalization_function_rec else_) ) (*to be implemented later*)
 
+| App (e,l) -> let rec normalized_args normalized remaining_args =
+  match remaining_args with
+  | [] -> Syntax.App(e,List.rev normalized)
+  | a::rest -> 
+  let rest_normalization  = normalization_function_rec a in 
+  match rest_normalization with 
+  | Syntax.Var x -> normalized_args (Syntax.Var x::normalized) rest
+  | _ -> let x = gen_var_tmp () in 
+  Syntax.Let((x,Type.gentyp()),rest_normalization,normalized_args(Syntax.Var x::normalized)rest)
+  in normalized_args[] l
+
+
 
 (*TODO Harde one to do *)
 | LetRec (fundef , t) -> LetRec (fundef , (normalization_function_rec t)) (*to implement later*)
-| App (e,l) -> App (e,l) (*to implement later*)
+
 | Tuple t_list  -> Tuple t_list (*to implement later*)
 | LetTuple ( l , t1 , t2) -> LetTuple (l , t1 , t2) (*to implement later*)
 | Array (l , r) ->  Array (l , r) (*to implement later*)
