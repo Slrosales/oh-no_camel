@@ -2,7 +2,7 @@ module Syntax = Core.Syntax
 module Parser = Core.Parser
 module Lexer = Core.Lexer
 open Frontend
-(*option*)
+(* (option) *)
 
 let output_file = ref None
 
@@ -16,7 +16,6 @@ let parse_only = ref false
 let output_asml = ref false
 let output_asml_file=ref None
 let asml_only = ref false
-(*code*)
 let print_ast l =
   print_string (Syntax.to_string l); print_newline ()
 
@@ -30,22 +29,22 @@ let file f =
     print_ast file_script;
 
 
-    (*k_normalization*)
+    (* (k_normalization) *)
     let test_output_k = K_normalization.normalization_function file_script in
      print_ast test_output_k;
-    (*alpha_generation*)
+    (* (alpha_generation)
     
-    (*reduction of nested-let*)
+    (reduction of nested-let)
     
-    (*closure conversion*)
+    (closure conversion)
 
-    (*ASML generation*)
+    (ASML generation)
 
-    (*other transformations*)
+    (other transformations)
 
-    (*Take care of input asml here*)
+    (Take care of input asml here)
 
-    (*Register allocation*)
+    (Register allocation) *)
 
     (* Register allocation / ARM allocation *)
     let arm_name = match !output_file with Some s -> s | None -> "output.s" in
@@ -54,7 +53,7 @@ let file f =
 
     Register_allocation.generate_assembly oc test_output_k;
         
-
+    close_out oc;
     close_in inchan;
     Printf.printf "Successfully compiled %s to %s\n" f arm_name
 

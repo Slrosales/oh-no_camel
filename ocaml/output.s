@@ -1,29 +1,31 @@
 .text
+.align 2
 .global main
+
 main:
 	push {fp, lr}
 	add fp, sp, #4
 	sub sp, sp, #1024
-	mov r0, #10
-	str r0, [fp, #-4]
-	mov r0, #20
-	str r0, [fp, #-8]
-	mov r0, #30
-	str r0, [fp, #-12]
-	mov r0, #5
-	str r0, [fp, #-16]
-	ldr r0, [fp, #-4]
-	ldr r1, [fp, #-8]
-	bl add
-	str r0, [fp, #-20]
+	mov r0, #0
+	str r0, [fp, #-12] @ store result to a
+	mov r0, #1
+	str r0, [fp, #-16] @ store result to b
 	ldr r0, [fp, #-12]
 	ldr r1, [fp, #-16]
-	bl add
-	str r0, [fp, #-24]
-	ldr r0, [fp, #-20]
-	ldr r1, [fp, #-24]
-	bl add
-	str r0, [fp, #-28]
-	ldr r0, [fp, #-28]
+	cmp r0, r1
+	bne else_v2
+	mov r0, #0
+	str r0, [fp, #-20] @ store result to res1
+	ldr r0, [fp, #-24] @ arg 0: min_caml_print_int
+	ldr r1, [fp, #-20] @ arg 1: res1
+	bl min_caml_print_int
+	b end_v3
+else_v2:
+	mov r0, #1
+	str r0, [fp, #-28] @ store result to res2
+	ldr r0, [fp, #-24] @ arg 0: min_caml_print_int
+	ldr r1, [fp, #-28] @ arg 1: res2
+	bl min_caml_print_int
+end_v3:
 	sub sp, fp, #4
 	pop {fp, pc}
