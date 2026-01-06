@@ -1,12 +1,12 @@
 type t =
-  | Unit 
-  | Int of int 
+  | Unit
+  | Int of int
   | Not of Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
-  | IfEq of Id.t * Id.t * t * t 
-  | IfLE of Id.t * Id.t * t * t 
+  | IfEq of Id.t * Id.t * t * t
+  | IfLE of Id.t * Id.t * t * t
   | Let of (Id.t * Type.t) * t * t
   | Var of Id.t
   | LetRec of fundef * t
@@ -17,8 +17,8 @@ type t =
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
+
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 val f : Syntax.t -> t
-
 val to_string : t -> string

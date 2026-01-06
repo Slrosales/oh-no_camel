@@ -34,11 +34,9 @@ let file f =
         if !verbose then print_endline "--- K-Norm ---"; print_knorm test_output_k; 
 
     (* 3. Alpha Conversion *)
-    (* let test_output_alpha = Alpha_conversion.alpha test_output_k in *)
-    
-    (* if !verbose then print_endline "--- Alpha ---";*)
-    (*print_knorm test_output_alpha;*)  (* Alpha preserves K_normalization type, so this works *)
-
+    let test_output_alpha = Alpha_conversion.alpha test_output_k in
+      if !verbose then (print_endline "--- Alpha ---"; print_knorm test_output_alpha);
+      
     (*reduction of nested-let*)
     
     (*closure conversion*)
