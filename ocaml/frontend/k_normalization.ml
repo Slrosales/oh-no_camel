@@ -1,4 +1,4 @@
-module Type = Type 
+open Core
 
 type t =
   | Unit
