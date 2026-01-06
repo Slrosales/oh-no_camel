@@ -1,3 +1,3 @@
-module Syntax = Core.Syntax
+module K = K_normalization
 
-val alpha : Syntax.t -> Syntax.t
+val alpha : K.t -> K.t

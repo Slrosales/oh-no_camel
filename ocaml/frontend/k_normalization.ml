@@ -1,4 +1,5 @@
-module Type = Type 
+open Core
+open Syntax
 
 type t =
   | Unit
@@ -60,7 +61,6 @@ let rec f (e : Syntax.t) : t =
         insert_let (f e2) (fun y ->
           Add(x, y)))
 
-<<<<<<< HEAD
   | Syntax.Sub (e1, e2) ->
       insert_let (f e1) (fun x ->
         insert_let (f e2) (fun y ->
@@ -75,29 +75,6 @@ let rec f (e : Syntax.t) : t =
     insert_let (f e_left) (fun x ->
       insert_let (f e_right) (fun (y) -> 
         IfEq(x, y, f e2, f e3)))
-=======
-| App (e,l) -> let rec normalized_args normalized remaining_args =
-  match remaining_args with
-  | [] -> Syntax.App(e,List.rev normalized)
-  | a::rest -> 
-  let rest_normalization  = normalization_function_rec a in 
-  match rest_normalization with 
-  | Syntax.Var x -> normalized_args (Syntax.Var x::normalized) rest
-  | _ -> let x = gen_var_tmp () in 
-  Syntax.Let((x,Type.gentyp()),rest_normalization,normalized_args(Syntax.Var x::normalized)rest)
-  in normalized_args[] l
-
-
-
-(*TODO Harde one to do *)
-| LetRec (fundef , t) -> LetRec (fundef , (normalization_function_rec t)) (*to implement later*)
-
-| Tuple t_list  -> Tuple t_list (*to implement later*)
-| LetTuple ( l , t1 , t2) -> LetTuple (l , t1 , t2) (*to implement later*)
-| Array (l , r) ->  Array (l , r) (*to implement later*)
-| Get (l , r) -> Get (l , r) (*to implement later*)
-| Put (t1 , t2 , t3) -> Put (t1 , t2 , t3) (*to implement later*)
->>>>>>> d78705b (external function call added)
 
   | Syntax.LE (e_left, e_right) ->
       insert_let (f e_left) (fun x ->
@@ -117,18 +94,20 @@ let rec f (e : Syntax.t) : t =
 
   | Syntax.Let ((x, t), e1, e2) ->
       Let ((x, t), f e1, f e2)
+      
 
-  | Syntax.App (e, args) ->
+| Syntax.App (e, args) ->
       insert_let (f e) (fun f_var ->
-        let rec bind_args args k =
-          match args with
-          | [] -> k []
-          | a :: rest -> 
-              insert_let (f a) (fun x ->
-                bind_args rest (fun xs -> k (x :: xs)))
-        in
-        bind_args args (fun x_list -> App(f_var, x_list))
-      )
+          let rec process_args processed remaining_args =
+        match remaining_args with
+        | [] -> App(f_var, List.rev processed) 
+        | a :: rest ->
+            insert_let (f a) (fun x ->
+              process_args (x :: processed) rest)
+      in
+      process_args [] args
+    )
+
 
   (* Explicitly ignore Floats and unsupported types *)
   | Syntax.Float _ | Syntax.FNeg _ | Syntax.FAdd _ | Syntax.FSub _ | Syntax.FMul _ | Syntax.FDiv _ -> 

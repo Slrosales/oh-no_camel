@@ -1,6 +1,4 @@
-
-
-module Syntax = Core.Syntax
+module K = K_normalization
 module Id = Core.Id
 module Type = Core.Type
 module M = Map.Make(String)
@@ -9,25 +7,19 @@ let find x env =
   try M.find x env
   with Not_found -> x
 
-let rec alpha_rec (env) (t:Syntax.t):Syntax.t =
+let rec alpha_rec (env) (t:K.t):K.t =
   match t with
-  | Unit -> Unit
-  | Int i -> Int i
-  | Float f -> Float f
-  | Var v -> Var (find v env)
-  | Neg x -> Neg (alpha_rec env x)
-  | Add (x, y) -> Add (alpha_rec env x, alpha_rec env y)
-  | Sub (x, y) -> Sub (alpha_rec env x, alpha_rec env y)
-  | FNeg x -> FNeg (alpha_rec env x)
-  | FAdd (x, y) -> FAdd (alpha_rec env x, alpha_rec env y)
-  | FSub (x, y) -> FSub (alpha_rec env x, alpha_rec env y)
-  | FMul (x, y) -> FMul (alpha_rec env x, alpha_rec env y)
-  | FDiv (x, y) -> FDiv (alpha_rec env x, alpha_rec env y)
-  | App (e, args) -> App (alpha_rec env e, List.map (alpha_rec env) args)
+  | K.Unit -> K.Unit
+  | K.Int i -> K.Int i
+  | K.Var v -> K.Var (find v env)
+  | K.Neg x -> K.Neg (alpha_rec env x)
+  | K.Add (x, y) -> K.Add (alpha_rec env x, alpha_rec env y)
+  | K.Sub (x, y) -> K.Sub (alpha_rec env x, alpha_rec env y)
+  | K.App (e, args) -> K.App (alpha_rec env e, List.map (alpha_rec env) args)
 
-  | Let ((v, t), e1, e2) ->
+  |K.Let ((v, t), e1, e2) ->
       let v' = Id.genid () in
-      Let ((v', t),
+      K.Let ((v', t),
            alpha_rec env e1,
            alpha_rec (M.add v v' env) e2)
   | _ -> failwith "not implemented yet"

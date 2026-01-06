@@ -25,19 +25,19 @@ let print_knorm k =
 let file f = 
   let inchan = open_in f in
   try
-    (* 1. Parsing *)
-    let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
+   (* 1. Parsing *)
+    let file_script = Parser.exp Lexer.token (Lexing.from_channel inchan) in
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
 
     (* 2. K-Normalization *)
-    let test_output_k = K_normalization.f file_script in
-        if !verbose then print_endline "--- K-Norm ---"; print_knorm test_output_k; 
+    let knorm = K_normalization.f file_script in
+    if !verbose then (print_endline "--- K-Norm ---"; print_knorm knorm);
 
-    (* 3. Alpha Conversion *)
-    (* let test_output_alpha = Alpha_conversion.alpha test_output_k in *)
-    
-    (* if !verbose then print_endline "--- Alpha ---";*)
-    (*print_knorm test_output_alpha;*)  (* Alpha preserves K_normalization type, so this works *)
+    (* 3. Alpha conversion *)
+    let alpha_script = Alpha_conversion.alpha knorm in
+    if !verbose then (print_endline "--- Alpha ---"; print_knorm alpha_script);
+
+     (* Alpha preserves K_normalization type, so this works *)
 
     (*reduction of nested-let*)
     
