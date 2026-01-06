@@ -2,7 +2,6 @@ module Syntax = Core.Syntax
 module Parser = Core.Parser
 module Lexer = Core.Lexer
 open Frontend
-(*option*)
 
 let output_file = ref None
 
@@ -20,21 +19,33 @@ let asml_only = ref false
 let print_ast l =
   print_string (Syntax.to_string l); print_newline ()
 
+let print_knorm k =
+  print_string (K_normalization.to_string k); print_newline ()
+
 let file f = 
   let inchan = open_in f in
   try
+    (* 1. Parsing *)
     let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
-    print_ast file_script;
+    if !verbose then (print_endline "--- AST ---"; print_ast file_script);
 
+    (* 2. K-Normalization *)
+    let test_output_k = K_normalization.f file_script in
+        if !verbose then print_endline "--- K-Norm ---"; print_knorm test_output_k; 
 
-    (*k_normalization*)
-    let test_output_k = K_normalization.normalization_function file_script in
-     print_ast test_output_k;
-    (*alpha_generation*)
-    
+    (* 3. Alpha Conversion *)
+    let test_output_alpha = Alpha_conversion.alpha test_output_k in
+      if !verbose then (print_endline "--- Alpha ---"; print_knorm test_output_alpha);
+      
     (*reduction of nested-let*)
     
+    let nested_expression = Net_let.net_let test_output_k in
+    if !verbose then print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression);
+
     (*closure conversion*)
+
+    let closure_expression = Closure.closure nested_expression in
+    if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);
 
     (*ASML generation*)
 
