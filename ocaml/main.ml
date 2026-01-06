@@ -39,7 +39,13 @@ let file f =
       
     (*reduction of nested-let*)
     
+    let nested_expression = Net_let.net_let test_output_k in
+    if !verbose then print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression);
+
     (*closure conversion*)
+
+    let closure_expression = Closure.closure nested_expression in
+    if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);
 
     (*ASML generation*)
 
