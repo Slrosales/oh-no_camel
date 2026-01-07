@@ -1,7 +1,6 @@
 module Id = Core.Id
 module Type = Core.Type
 
-
 type ident = 
 | INT of int
 | IDENT of Id.t
@@ -28,9 +27,8 @@ type t =
 
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-let to_string_ident = function
-  | INT i -> string_of_int i
-  | IDENT id -> id
+let to_string_ident = function INT i -> string_of_int i | IDENT id -> id
+
 let rec to_string = function
   | Unit -> "()"
   | Int i -> string_of_int i
@@ -40,11 +38,11 @@ let rec to_string = function
   | Sub (x, y) -> Printf.sprintf "%s - %s" x (to_string_ident y)
   | Var x -> x
   | IfEq (x, y, e1, e2) ->
-      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x (to_string_ident y) (to_string e1)
-        (to_string e2)
+      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string e1) (to_string e2)
   | IfLE (x, y, e1, e2) ->
-      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y) (to_string e1)
-        (to_string e2)
+      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string e1) (to_string e2)
   | Let ((x, _), e1, e2) ->
       Printf.sprintf "let %s = %s in\n%s" x (to_string e1) (to_string e2)
   | LetRec (fundef, e) ->
@@ -64,10 +62,28 @@ let rec to_string = function
       Printf.sprintf "ExtCall %s(%s)" f (String.concat " " args)
 
 (*Do nothing for the moment need to be modify in the future*)
-(*TODO finish the net_let_rec*)
-let ident_from_int ( entry:int):ident = INT entry 
+let is_a_let (let_t:t):bool = match let_t with 
+| Let _ -> true
+| _ -> false
 
-let ident_from_id (entry:Id.t):ident = IDENT entry
+let rec get_last_after_in (let_t:t):t = match let_t with
+| Let (_,_,Let(label,t1,t2)) -> get_last_after_in (Let(label,t1,t2))
+| Let (_,_,t3) -> t3
+| _ -> let_t
+
+let rec let_build (inside_let:t)(label:(Id.t*Type.t))(after_in:t):t = match inside_let with
+| Let (label_inside,t1_inside,Let(label2,t1,t2)) -> Let(label_inside,t1_inside,(let_build (Let(label2,t1,t2))(label)(after_in)))
+| Let (label_inside,t1_inside,t2_inside) -> Let (label_inside,t1_inside,Let(label,t2_inside,after_in)) 
+| _ -> failwith "error let_build take only Let in inside_let"
+and
+flatten (let_tree:t):t = match let_tree with
+| Let (label1,Let(label2,t1,t2),t3) -> let flatten_t2 = flatten (Let(label2,t1,t2)) in let_build flatten_t2 label1 t3
+| Let (label,t1,t2) -> Let (label,t1,t2) 
+| _ -> let_tree
+
+(*TODO finish the net_let_rec*)
+let ident_from_int (entry : int) : ident = INT entry
+let ident_from_id (entry : Id.t) : ident = IDENT entry
 
 let rec net_let_rec (knormal : K_normalization.t) : t =
   match knormal with
@@ -78,9 +94,13 @@ let rec net_let_rec (knormal : K_normalization.t) : t =
   | Var id -> Var id
   | Add (id1, id2) -> Add (id1, ident_from_id id2)
   | Sub (id1, id2) -> Sub (id1, ident_from_id id2)
-  | IfEq (id1, id2, t1, t2) -> IfEq (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
-  | IfLE (id1, id2, t1, t2) -> IfLE (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
-  | Let (label, t1, t2) -> Let (label, net_let_rec t1, net_let_rec t2)
+  | IfEq (id1, id2, t1, t2) ->
+      IfEq (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
+  | IfLE (id1, id2, t1, t2) ->
+      IfLE (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
+
+  | Let (label, t1, t2) ->flatten (Let (label, net_let_rec t1, net_let_rec t2))
+
   | LetRec (fundef, t) ->
       let name = fundef.name in
       let args = fundef.args in

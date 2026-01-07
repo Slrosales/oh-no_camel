@@ -1,10 +1,7 @@
 module Id = Core.Id
 module Type = Core.Type
 
-
-type ident = 
-| INT of int
-| IDENT of Id.t
+type ident = INT of int | IDENT of Id.t
 
 type t =
   | Unit
@@ -28,7 +25,7 @@ type t =
 
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-val ident_from_int : int->ident
-val ident_from_id : Id.t ->ident
+val ident_from_int : int -> ident
+val ident_from_id : Id.t -> ident
 val to_string : t -> string
 val net_let : K_normalization.t -> t
