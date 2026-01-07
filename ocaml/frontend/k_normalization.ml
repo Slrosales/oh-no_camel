@@ -1,4 +1,5 @@
 module Type = Type
+module M = Map.Make (String)
 
 type t =
   | Unit
@@ -74,21 +75,68 @@ let rec f (e : Syntax.t) : t =
                   IfEq (x, zero, f e3, f e2))))
   (* Rename variables following v0, v1...vn order*)
   | Syntax.Let ((x, t), e1, e2) ->
-      let normalized_e1 = f e1 in
-      (* Force e1 to run first *)
-      let normalized_e2 = f e2 in
-      (* Then e2 *)
-      Let ((x, t), normalized_e1, normalized_e2)
-  | Syntax.App (e, args) ->
-      insert_let (f e) (fun f_var ->
-          let rec bind_args args k =
-            match args with
-            | [] -> k []
-            | a :: rest ->
-                insert_let (f a) (fun x ->
-                    bind_args rest (fun xs -> k (x :: xs)))
+      let e1_definition = f e1 in
+      let e2_body = f e2 in
+      Let ((x, t), e1_definition, e2_body)
+  | Syntax.LetRec
+      (*let rec f x y = ...body... in ...rest...*)
+      ({ Syntax.name = x, t; Syntax.args = list_args; Syntax.body = e1 }, e2) ->
+      let e1_body = f e1 in
+      (* rest of the program *)
+      let e2_rest = f e2 in
+
+      (* map fields from Syntax.fundef to KNormal.fundef *)
+      LetRec ({ name = (x, t); args = list_args; body = e1_body }, e2_rest)
+  | Syntax.App (e, args) -> (
+      match e with
+      | Syntax.Var func_name ->
+          let ext_func =
+            [
+              "create_array";
+              "create_float_array";
+              "print_int";
+              "print_newline";
+              "sin";
+              "cos";
+              "sqrt";
+              "abs_float";
+              "int_of_float";
+              "float_of_int";
+              "truncate";
+            ]
           in
-          bind_args args (fun x_list -> App (f_var, x_list)))
+          (* Known External Function *)
+          if List.mem func_name ext_func then
+            let rec bind_args args k =
+              match args with
+              | [] -> k []
+              | a :: rest ->
+                  insert_let (f a) (fun x ->
+                      bind_args rest (fun xs -> k (x :: xs)))
+            in
+            bind_args args (fun x_list -> ExtFunApp (func_name, x_list))
+          (* User-Defined Function Var *)
+            else
+            insert_let (f e) (fun f_var ->
+                let rec bind_args args k =
+                  match args with
+                  | [] -> k []
+                  | a :: rest ->
+                      insert_let (f a) (fun x ->
+                          bind_args rest (fun xs -> k (x :: xs)))
+                in
+                bind_args args (fun x_list -> App (f_var, x_list)))
+      (* Complex Function Expression *)
+      | _ ->
+          insert_let (f e) (fun f_var ->
+              let rec bind_args args k =
+                match args with
+                | [] -> k []
+                | a :: rest ->
+                    insert_let (f a) (fun x ->
+                        bind_args rest (fun xs -> k (x :: xs)))
+              in
+              bind_args args (fun x_list -> App (f_var, x_list))))
   (* Explicitly ignore Floats and unsupported types *)
   | Syntax.Float _ | Syntax.FNeg _ | Syntax.FAdd _ | Syntax.FSub _
   | Syntax.FMul _ | Syntax.FDiv _ ->

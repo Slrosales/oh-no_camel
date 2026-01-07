@@ -32,18 +32,17 @@ let rec alpha_rec env e =
       let v', env' =
         if is_temp_var v then (v, env) (* Keep mapping v->v implicitly *)
         else
-          let new_v = Id.genid () in
+          let new_v = Id.genid_ v in
           (new_v, M.add v new_v env)
       in
       let e2' = alpha_rec env' e2 in
       K.Let ((v', t), e1', e2')
   | K.Var x -> K.Var (find x env)
-  (* Functions *)
   | K.LetRec ({ K.name = x, t; K.args = yts; K.body = e1 }, e2) ->
       let x', env' =
         if is_temp_var x then (x, env)
         else
-          let new_x = Id.genid () in
+          let new_x = Id.genid_ x in
           (new_x, M.add x new_x env)
       in
       let env_body, new_args =
@@ -51,7 +50,7 @@ let rec alpha_rec env e =
           (fun (y, t) (env_acc, args_acc) ->
             if is_temp_var y then (env_acc, (y, t) :: args_acc)
             else
-              let y' = Id.genid () in
+              let y' = Id.genid_ y in
               (M.add y y' env_acc, (y', t) :: args_acc))
           yts (env', [])
       in
