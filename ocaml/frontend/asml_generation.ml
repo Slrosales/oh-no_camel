@@ -1,26 +1,30 @@
 
 module Asml = Core.Asml
 
+let convert_ident (closure:Closure.ident):Asml.ident = match closure with
+| INT i -> Asml.INT i
+| IDENT id -> Asml.IDENT id
+
 let rec closure_rec (closure:Closure.t):Asml.exp = match closure with 
 | Unit -> NOP
 | Int int -> Ident (INT int)
 | Var id -> Label id
 | Not _t -> failwith ""(*n'exist peut être avant*)
 | Neg t -> Neg t
-| Add (t1,t2) -> Add (t1,IDENT t2) (*Can change if improvement*)
-| Sub (t1 , t2) -> Sub (t1,IDENT t2)
-| Get (t1 , t2) -> failwith "" (*MemLoad (t1,)*)
-| Put (t1 , t2 , t3) -> failwith ""
+| Add (t1,t2) -> Add (t1,convert_ident t2) (*Can change if improvement*)
+| Sub (t1 , t2) -> Sub (t1,convert_ident t2)
+| Get (t1 , t2) -> MemLoad (t1,convert_ident t2) 
+| Put (t1 , t2 , t3) -> Memstore (t1,convert_ident t2,t3)
 
 
-| IfEq (left_condition,right_condition,then_body,else_body) -> failwith ""
-| IfLE (left_condition,right_condition,then_body,else_body) -> failwith ""
-| App (t , t_list ) -> failwith ""
-| Tuple t_list -> failwith ""
-| LetTuple ( type_list , t1 , t2 ) -> failwith ""
+| IfEq (_left_condition,_right_condition,_then_body,_else_body) -> failwith ""
+| IfLE (_left_condition,_right_condition,_then_body,_else_body) -> failwith ""
+| App (_t , _t_list ) -> failwith ""
+| Tuple _t_list -> failwith ""
+| LetTuple ( _type_list , _t1 , _t2 ) -> failwith ""
 
-| ExtArray t -> failwith ""
-| ExtFunApp (name,list_arg) -> failwith ""
+| ExtArray _t -> failwith ""
+| ExtFunApp (_name,_list_arg) -> failwith ""
 | _ -> failwith "Not suppose to be here"
 and closure_rec_let (closure:Closure.t):Asml.asmt =match closure with
   | Let ((id , _) , t1 , t2) -> LET (id, closure_rec t1,closure_rec_let t2)
