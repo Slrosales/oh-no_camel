@@ -15,6 +15,7 @@ let parse_only = ref false
 let output_asml = ref false
 let output_asml_file=ref None
 let asml_only = ref false
+(*code*)
 let print_ast l =
   print_string (Syntax.to_string l); print_newline ()
 
@@ -23,6 +24,11 @@ let print_knorm k =
 
 let file f = 
   let inchan = open_in f in
+
+  (* Change done here by backend  *)
+  let arm_name = match !output_file with Some s -> s | None -> "output.s" in
+  let oc = open_out arm_name in
+
   try
     (* 1. Parsing *)
     let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
@@ -46,27 +52,21 @@ let file f =
     let closure_expression = Closure.closure nested_expression in
     if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);
 
-    (ASML generation)
+    (*ASML generation*)
 
-    (other transformations)
+    (*other transformations*)
 
-    (Take care of input asml here)
+    (*Take care of input asml here*)
 
-    (Register allocation) *)
-
-    (* Register allocation / ARM allocation *)
-    let arm_name = match !output_file with Some s -> s | None -> "output.s" in
-    let oc = open_out arm_name in
-
-
-    Register_allocation.generate_assembly oc test_output_k;
-        
+    (*Register allocation*)
+    Register_allocation.generate_assembly oc test_output_alpha;
+    (*ARM allocation*)
+      (* Change done here by backend  *)
     close_out oc;
-    close_in inchan;
-    Printf.printf "Successfully compiled %s to %s\n" f arm_name
+    close_in inchan
 
 
-  with e -> (close_in inchan; raise e)
+  with e -> (close_out oc; close_in inchan; raise e)
 
 let () = 
   let files = ref [] in
