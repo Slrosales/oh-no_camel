@@ -1,4 +1,6 @@
-open Core
+module Id = Core.Id
+module Type = Core.Type
+
 
 type ident = 
 | INT of int

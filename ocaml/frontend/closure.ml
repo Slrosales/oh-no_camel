@@ -1,4 +1,5 @@
-open Core
+module Id = Core.Id
+module Type = Core.Type
 
 (*
 in this comment are the element for research tree of a string

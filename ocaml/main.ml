@@ -1,6 +1,7 @@
 module Syntax = Core.Syntax
 module Parser = Core.Parser
 module Lexer = Core.Lexer
+module Asml = Core.Asml
 open Frontend
 
 let output_file = ref None
@@ -53,6 +54,9 @@ let file f =
     if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);
 
     (*ASML generation*)
+
+    let asml = Asml_generation.asml_generator closure_expression in
+    if !verbose then print_endline "--- ASML ---"; print_endline (Asml.to_string asml);
 
     (*other transformations*)
 
