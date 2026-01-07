@@ -170,7 +170,6 @@ let generate_assembly oc k_ast =
 open Frontend
 module K = K_normalization.Syntax
 
-(* --- Stack Management --- *)
 let stack_map = Hashtbl.create 128
 let stack_next = ref (-12) 
 
@@ -256,7 +255,7 @@ let rec emit_exp oc = function
            Printf.fprintf oc "\tldr r1, [fp, #%d]\n" (get_slot y);
            Printf.fprintf oc "\tcmp r0, r1\n";
            Printf.fprintf oc "\tbgt %s\n" label_else
-       | K.Var x -> (* For: if x then ... *)
+       | K.Var x -> 
            Printf.fprintf oc "\tldr r0, [fp, #%d]\n" (get_slot x);
            Printf.fprintf oc "\tcmp r0, #0\n";
            Printf.fprintf oc "\tbeq %s\n" label_else
@@ -279,10 +278,14 @@ let rec emit_exp oc = function
       Printf.fprintf oc "\tsub r0, r0, r1\n"
 
   | K.Let ((id, _), e1, e2) ->
-      emit_exp oc e1;
-      let offset = get_slot id in
-      Printf.fprintf oc "\tstr r0, [fp, #%d] @ store result to %s\n" offset id;
-      emit_exp oc e2
+        emit_exp oc e1;
+        if id = "_" then (
+          emit_exp oc e2
+        ) else (
+          let offset = get_slot id in
+          Printf.fprintf oc "\tstr r0, [fp, #%d] @ store %s\n" offset id;
+          emit_exp oc e2
+        )
 
   | _ -> Printf.fprintf oc "\t@ Unsupported operation in backend\n"
 
