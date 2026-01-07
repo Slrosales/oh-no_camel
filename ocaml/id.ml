@@ -1,14 +1,18 @@
-module M = Map.Make (String)
+module M = Map.Make(String)
 
 type t = string
-type l = L of string
-
 let to_string x = x
 
-let genid =
-  let counter = ref (-1) in
-  fun () ->
-    incr counter;
-    Printf.sprintf "v%d" !counter
+let counter = ref 0
 
-let gentmp (_typ : Type.t) : t = genid ()
+let genid () =
+  incr counter;
+  Printf.sprintf "?v%d" !counter
+
+let genid_ s =
+  incr counter;
+  Printf.sprintf "%s.%d" s !counter
+
+let gentmp (_typ : Type.t) : t = 
+  incr counter;
+  Printf.sprintf "v%d" !counter

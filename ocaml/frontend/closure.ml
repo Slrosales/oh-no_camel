@@ -1,4 +1,5 @@
-open Core
+module Id = Core.Id
+module Type = Core.Type
 
 (*
 in this comment are the element for research tree of a string
@@ -7,9 +8,7 @@ module SetString = Set.Make(String)
 let function_name = SetString.empty
 *)
 
-type ident = 
-| INT of int
-| IDENT of Id.t
+type ident = INT of int | IDENT of Id.t
 
 type t =
   | Unit
@@ -36,9 +35,7 @@ type fundef = { name : Id.t; args : Id.t list; body : t }
 type all_fun = Fun of fundef * all_fun | Main of t
 type toplevel = all_fun
 
-let to_string_ident = function
-  | INT i -> string_of_int i
-  | IDENT id -> id
+let to_string_ident = function INT i -> string_of_int i | IDENT id -> id
 
 let rec to_string_t = function
   | Unit -> "()"
@@ -49,11 +46,11 @@ let rec to_string_t = function
   | Sub (x, y) -> Printf.sprintf "%s - %s" x (to_string_ident y)
   | Var x -> x
   | IfEq (x, y, e1, e2) ->
-      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x (to_string_ident y) (to_string_t e1)
-        (to_string_t e2)
+      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string_t e1) (to_string_t e2)
   | IfLE (x, y, e1, e2) ->
-      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y) (to_string_t e1)
-        (to_string_t e2)
+      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string_t e1) (to_string_t e2)
   | Let ((x, _), e1, e2) ->
       Printf.sprintf "let %s = %s in\n%s" x (to_string_t e1) (to_string_t e2)
   | App (f, args) ->
@@ -88,9 +85,9 @@ let rec to_string_all_fun (all_fun : all_fun) : string =
 
 let to_string (toplevel : toplevel) : string = to_string_all_fun toplevel
 
-let ident_conversion (entry: Net_let.ident):ident = match entry with
-| IDENT id -> IDENT id
-| INT i -> INT i
+let ident_conversion (entry : Net_let.ident) : ident =
+  match entry with IDENT id -> IDENT id | INT i -> INT i
+
 let rec closure_t_rec (net_let : Net_let.t) : t =
   match net_let with
   | Unit -> Unit
