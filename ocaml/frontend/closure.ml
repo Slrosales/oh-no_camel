@@ -1,7 +1,7 @@
 module Syntax = Core.Syntax
 module Asml = Core.Asml
 
-type t = 
+type t 
   
 
-let closure (syntax_t:Syntax.t):t = failwith "not implemented yet"
+let closure (_syntax_t:Syntax.t):t = failwith "not implemented yet"
