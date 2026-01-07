@@ -1,10 +1,7 @@
 module Id = Core.Id
 module Type = Core.Type
 
-
-type ident = 
-| INT of int
-| IDENT of Id.t
+type ident = INT of int | IDENT of Id.t
 
 type t =
   | Unit

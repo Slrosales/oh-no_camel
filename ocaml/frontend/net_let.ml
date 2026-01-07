@@ -1,10 +1,7 @@
 module Id = Core.Id
 module Type = Core.Type
 
-
-type ident = 
-| INT of int
-| IDENT of Id.t
+type ident = INT of int | IDENT of Id.t
 
 type t =
   | Unit
@@ -28,9 +25,8 @@ type t =
 
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-let to_string_ident = function
-  | INT i -> string_of_int i
-  | IDENT id -> id
+let to_string_ident = function INT i -> string_of_int i | IDENT id -> id
+
 let rec to_string = function
   | Unit -> "()"
   | Int i -> string_of_int i
@@ -40,11 +36,11 @@ let rec to_string = function
   | Sub (x, y) -> Printf.sprintf "%s - %s" x (to_string_ident y)
   | Var x -> x
   | IfEq (x, y, e1, e2) ->
-      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x (to_string_ident y) (to_string e1)
-        (to_string e2)
+      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string e1) (to_string e2)
   | IfLE (x, y, e1, e2) ->
-      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y) (to_string e1)
-        (to_string e2)
+      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string e1) (to_string e2)
   | Let ((x, _), e1, e2) ->
       Printf.sprintf "let %s = %s in\n%s" x (to_string e1) (to_string e2)
   | LetRec (fundef, e) ->
@@ -65,9 +61,8 @@ let rec to_string = function
 
 (*Do nothing for the moment need to be modify in the future*)
 (*TODO finish the net_let_rec*)
-let ident_from_int ( entry:int):ident = INT entry 
-
-let ident_from_id (entry:Id.t):ident = IDENT entry
+let ident_from_int (entry : int) : ident = INT entry
+let ident_from_id (entry : Id.t) : ident = IDENT entry
 
 let rec net_let_rec (knormal : K_normalization.t) : t =
   match knormal with
@@ -78,8 +73,10 @@ let rec net_let_rec (knormal : K_normalization.t) : t =
   | Var id -> Var id
   | Add (id1, id2) -> Add (id1, ident_from_id id2)
   | Sub (id1, id2) -> Sub (id1, ident_from_id id2)
-  | IfEq (id1, id2, t1, t2) -> IfEq (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
-  | IfLE (id1, id2, t1, t2) -> IfLE (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
+  | IfEq (id1, id2, t1, t2) ->
+      IfEq (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
+  | IfLE (id1, id2, t1, t2) ->
+      IfLE (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
   | Let (label, t1, t2) -> Let (label, net_let_rec t1, net_let_rec t2)
   | LetRec (fundef, t) ->
       let name = fundef.name in
