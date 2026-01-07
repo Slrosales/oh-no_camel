@@ -1,4 +1,6 @@
-open Core
+module Type = Core.Type
+module Id = Core.Id
+module Syntax = Core.Syntax
 
 type t =
   | Unit
