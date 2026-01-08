@@ -166,17 +166,18 @@ let generate_assembly oc k_ast =
   emit_asmt oc asml_asmt;
   Printf.fprintf oc "\tsub sp, fp, #4\n\tpop {fp, pc}\n" *)
 
-module K = K_normalization
+module A = Asml
 
 let stack_map = Hashtbl.create 128
 let stack_next = ref (-12) 
 
 let get_slot id =
-  match Hashtbl.find_opt stack_map id with
+  let s = Id.to_string id in
+  match Hashtbl.find_opt stack_map s with
   | Some offset -> offset
   | None ->
       let offset = !stack_next in
-      Hashtbl.add stack_map id offset;
+      Hashtbl.add stack_map s offset;
       stack_next := !stack_next - 4;
       offset
 
@@ -184,52 +185,48 @@ let reset_stack () =
   Hashtbl.clear stack_map;
   stack_next := -12
 
-let rec emit_exp oc = function
-  | K.Unit -> ()
-  | K.Int i -> 
-      Printf.fprintf oc "\tmov r0, #%d\n" i
-  | K.Var x -> 
-      let offset = get_slot x in
-      Printf.fprintf oc "\tldr r0, [r11, #%d] @ load variable %s\n" offset x
+(* Helper to handle the ASML ident type *)
+let load_ident oc reg = function
+  | A.INT i -> Printf.fprintf oc "\tmov %s, #%d\n" reg i
+  | A.IDENT id -> Printf.fprintf oc "\tldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) (Id.to_string id)
 
-  (* Handle Arithmetic *)
-  | K.Add (x, y) ->
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot x);
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot y);
+(* Process an ASML expression (the Right-Hand Side of a LET) *)
+let emit_asml_exp oc = function
+  | A.Ident ident -> 
+      load_ident oc "r0" ident
+  | A.Add (id, ident) ->
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
       Printf.fprintf oc "\tadd r0, r0, r1\n"
-  | K.Sub (x, y) ->
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot x);
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot y);
+  | A.Sub (id, ident) ->
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
       Printf.fprintf oc "\tsub r0, r0, r1\n"
-
-  (* Handle External/Library Functions (e.g., print_int) *)
-  | K.App (f, args) | K.ExtFunApp (f, args) ->
-      let label = match f with
-        | "print_int" -> "_min_caml_print_int"
-        | "print_newline" -> "_min_caml_print_newline"
-        | name -> name
-      in
-      List.iteri (fun i a -> 
-        if i < 4 then Printf.fprintf oc "\tldr r%d, [r11, #%d]\n" i (get_slot a)
-      ) args;
-      Printf.fprintf oc "\tbl %s\n" label
-
-  (* CRITICAL: Recursive Let handling for nested expressions *)
-  | K.Let ((id, _), e1, e2) ->
-      emit_exp oc e1; (* This handles the "let v0 = 5 in" part *)
-      let offset = get_slot id in
-      Printf.fprintf oc "\tstr r0, [r11, #%d] @ store result %s\n" offset id;
-      emit_exp oc e2 (* This continues to the rest of the code *)
-
+  | A.Neg id ->
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      Printf.fprintf oc "\trsb r0, r1, #0\n"
   | other -> 
-      failwith ("Backend Error: Unhandled node " ^ (K.to_string other))
+      failwith ("ASML Backend: Expression not implemented: " ^ (A.exp_to_string other))
 
-let generate_assembly oc k_exp =
-  reset_stack ();
-  Printf.fprintf oc ".text\n.align 2\n.global main\n\nmain:\n";
-  Printf.fprintf oc "\tpush {r11, r14}\n";
-  Printf.fprintf oc "\tadd r11, r13, #4\n";
-  Printf.fprintf oc "\tsub r13, r13, #1024\n";
-  emit_exp oc k_exp;
-  Printf.fprintf oc "\tsub r13, r11, #4\n";
-  Printf.fprintf oc "\tpop {r11, r15}\n"
+(* Process the ASML assignments (LET ... in ...) *)
+let rec emit_asml_asmt oc = function
+  | A.LET (id, exp, next_asmt) ->
+      emit_asml_exp oc exp;
+      let offset = get_slot id in
+      Printf.fprintf oc "\tstr r0, [r11, #%d] @ store result %s\n" offset (Id.to_string id);
+      emit_asml_asmt oc next_asmt
+  | A.EXP exp ->
+      emit_asml_exp oc exp
+
+(* Entry point for ASML Toplevel *)
+let generate_assembly oc = function
+  | A.Main asmt ->
+      reset_stack ();
+      Printf.fprintf oc ".text\n.align 2\n.global main\n\nmain:\n";
+      Printf.fprintf oc "\tpush {r11, r14}\n";
+      Printf.fprintf oc "\tadd r11, r13, #4\n";
+      Printf.fprintf oc "\tsub r13, r13, #1024\n";
+      emit_asml_asmt oc asmt;
+      Printf.fprintf oc "\tsub r13, r11, #4\n";
+      Printf.fprintf oc "\tpop {r11, r15}\n"
+  | _ -> failwith "Only Main is currently supported in the backend"
