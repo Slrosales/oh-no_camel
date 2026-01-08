@@ -191,16 +191,18 @@ let load_ident oc reg = function
   | A.IDENT id -> Printf.fprintf oc "\tldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) id
 
 (* 1. Handle the Right-Hand Side of a 'let' or a standalone expression *)
-let emit_exp oc = function
+let rec emit_exp oc = function
   | A.Ident ident -> 
       load_ident oc "r0" ident
 
   | A.Add (id, ident) ->
+      Printf.printf "Evaluating ADDITION\n";
       Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
       load_ident oc "r1" ident;
       Printf.fprintf oc "\tadd r0, r0, r1\n"
 
   | A.Sub (id, ident) ->
+      Printf.printf "Evaluating SUBSTRACTION\n";
       Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
       load_ident oc "r1" ident;
       Printf.fprintf oc "\tsub r0, r0, r1\n"
@@ -209,16 +211,58 @@ let emit_exp oc = function
       Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
       Printf.fprintf oc "\trsb r0, r1, #0\n"
 
+  | A.If (id, condition, ident, asmt1, asmt2) ->
+      Printf.printf "Evaluating IF statement\n";
+      let branch_equal = "beq" in
+      let branch_less_equal = "ble" in
+      let branch_greater_equal = "bge" in
+      (*Skipping a version for float values for now*)
+
+      let branches = match condition with
+        | A.EQ -> branch_equal
+        | A.LE -> branch_less_equal
+        | A.GE -> branch_greater_equal
+      in
+
+      (*in order to distinguish an if statement for nested conditions*)
+      let if_then_else_counter = ref 0 in (*ref allows storing and updating a value*)
+      let generating_next_step step =
+        let current_count = !if_then_else_counter in
+        if_then_else_counter := !if_then_else_counter + 1;
+        Printf.sprintf "%s_%d" step current_count
+      in
+
+      let step_then = generating_next_step "then" in
+      let step_end = generating_next_step "end" in
+
+      begin match condition with
+        | A.EQ | A.LE | A.GE ->
+            Printf.fprintf oc "tldr r1, [r11, #%d]\n" (get_slot id);
+            load_ident oc "r1" ident;
+            Printf.fprintf oc "\tcmp r0, r1\n"
+      end;
+
+      Printf.fprintf oc "\t%s %s\n" branches step_then;
+      Printf.printf "Evaluating THEN";
+      emit_asmt oc asmt1;
+      Printf.fprintf oc "\tb %s\n" step_end;
+      Printf.printf "Evaluating THEN statement\n";
+      Printf.fprintf oc "%s:\n" step_then;
+      emit_asmt oc asmt2;
+      Printf.fprintf oc "%s:\n" step_end
+
   | _ -> () (* Ignore other types for now to avoid crashes *)
 
 (* 2. Handle the 'LET id = exp in next' chain *)
-let rec emit_asmt oc = function
+and emit_asmt oc = function
   | A.LET (id, exp, next_asmt) ->
+      Printf.printf "Evaluating LET\n";
       emit_exp oc exp;
       let offset = get_slot id in
       Printf.fprintf oc "\tstr r0, [r11, #%d] @ store result %s\n" offset id;
       emit_asmt oc next_asmt
   | A.EXP exp ->
+      Printf.printf "Evaluating EXP\n";
       emit_exp oc exp
 
 (* 3. Main entry point for the ASML tree *)

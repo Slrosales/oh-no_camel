@@ -7,8 +7,8 @@ type condition =
 | EQ
 | LE
 | GE
-| FEQ
-| FLE
+(*| FEQ
+| FLE*)
 
 type exp =
 | NOP
@@ -63,8 +63,8 @@ let condition_to_string (condition:condition):string = match condition with
 | EQ -> "EQ"
 | LE -> "LE"
 | GE -> "GE"
-| FEQ -> "FEQ"
-| FLE -> "FLE"
+(*| FEQ -> "FEQ"
+| FLE -> "FLE"*)
 
 let rec exp_to_string (exp:exp):string = match exp with
 | NOP -> "nop"
