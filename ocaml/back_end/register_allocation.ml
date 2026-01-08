@@ -168,7 +168,7 @@ let generate_assembly oc k_ast =
 
 module A = Asml
 
-(* Simple stack management *)
+(* Stack creation *)
 let stack_map = Hashtbl.create 128
 let stack_next = ref (-12) 
 
@@ -185,12 +185,11 @@ let reset_stack () =
   Hashtbl.clear stack_map;
   stack_next := -12
 
-(* Helper to load constants or variables into a specific register *)
 let load_ident oc reg = function
   | A.INT i -> Printf.fprintf oc "\tmov %s, #%d\n" reg i
   | A.IDENT id -> Printf.fprintf oc "\tldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) id
 
-(* 1. Handle the Right-Hand Side of a 'let' or a standalone expression *)
+
 let emit_exp oc = function
   | A.Ident ident -> 
       load_ident oc "r0" ident
@@ -209,9 +208,9 @@ let emit_exp oc = function
       Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
       Printf.fprintf oc "\trsb r0, r1, #0\n"
 
-  | _ -> () (* Ignore other types for now to avoid crashes *)
+  | _ -> () (* Operation not implemented *)
 
-(* 2. Handle the 'LET id = exp in next' chain *)
+
 let rec emit_asmt oc = function
   | A.LET (id, exp, next_asmt) ->
       emit_exp oc exp;
@@ -221,19 +220,20 @@ let rec emit_asmt oc = function
   | A.EXP exp ->
       emit_exp oc exp
 
-(* 3. Main entry point for the ASML tree *)
+
 let rec generate_assembly oc = function
   | A.Main asmt ->
       reset_stack ();
       Printf.fprintf oc ".text\n.align 2\n.global main\n\nmain:\n";
-      (* Prologue: Setup stack frame *)
+
+      (* Prologue *)
       Printf.fprintf oc "\tpush {r11, r14}\n";
       Printf.fprintf oc "\tadd r11, r13, #4\n";
       Printf.fprintf oc "\tsub r13, r13, #1024\n";
 
       emit_asmt oc asmt;
 
-      (* Epilogue: Restore stack and return *)
+      (* Epilogue *)
       Printf.fprintf oc "\tsub r13, r11, #4\n";
       Printf.fprintf oc "\tpop {r11, r15}\n"
 
