@@ -1,4 +1,5 @@
-open Core
+module Id = Core.Id
+module Type = Core.Type
 
 (*
 in this comment are the element for research tree of a string
@@ -6,22 +7,27 @@ module SetString = Set.Make(String)
 
 let function_name = SetString.empty
 *)
+
+type ident = INT of int | IDENT of Id.t
+
 type t =
   | Unit
   | Int of int
   | Not of Id.t
   | Neg of Id.t
-  | Add of Id.t * Id.t
-  | Sub of Id.t * Id.t
-  | IfEq of Id.t * Id.t * t * t
-  | IfLE of Id.t * Id.t * t * t
+  | Add of Id.t * ident
+  | Sub of Id.t * ident
+  | Mul of Id.t * ident
+  | Div of Id.t * ident
+  | IfEq of Id.t * ident * t * t
+  | IfLE of Id.t * ident * t * t
   | Let of (Id.t * Type.t) * t * t
   | Var of Id.t
   | App of Id.t * Id.t list (*note we have now apply_direct(l, (x1 … xn))*)
   | Tuple of Id.t list
   | LetTuple of (Id.t * Type.t) list * Id.t * t
-  | Get of Id.t * Id.t
-  | Put of Id.t * Id.t * Id.t
+  | Get of Id.t * ident
+  | Put of Id.t * ident * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
 
@@ -31,20 +37,24 @@ type fundef = { name : Id.t; args : Id.t list; body : t }
 type all_fun = Fun of fundef * all_fun | Main of t
 type toplevel = all_fun
 
+let to_string_ident = function INT i -> string_of_int i | IDENT id -> id
+
 let rec to_string_t = function
   | Unit -> "()"
   | Int i -> string_of_int i
   | Not x -> Printf.sprintf "not %s" x
   | Neg x -> Printf.sprintf "-(%s)" x
-  | Add (x, y) -> Printf.sprintf "%s + %s" x y
-  | Sub (x, y) -> Printf.sprintf "%s - %s" x y
+  | Add (x, y) -> Printf.sprintf "%s + %s" x (to_string_ident y)
+  | Sub (x, y) -> Printf.sprintf "%s - %s" x (to_string_ident y)
+  | Mul (x, y) -> Printf.sprintf "%s * %s" x (to_string_ident y)
+  | Div (x, y) -> Printf.sprintf "%s / %s" x (to_string_ident y)
   | Var x -> x
   | IfEq (x, y, e1, e2) ->
-      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x y (to_string_t e1)
-        (to_string_t e2)
+      Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string_t e1) (to_string_t e2)
   | IfLE (x, y, e1, e2) ->
-      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x y (to_string_t e1)
-        (to_string_t e2)
+      Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y)
+        (to_string_t e1) (to_string_t e2)
   | Let ((x, _), e1, e2) ->
       Printf.sprintf "let %s = %s in\n%s" x (to_string_t e1) (to_string_t e2)
   | App (f, args) ->
@@ -54,8 +64,8 @@ let rec to_string_t = function
       Printf.sprintf "let (%s) = %s in\n%s"
         (String.concat ", " (List.map fst vars))
         y (to_string_t e)
-  | Get (x, y) -> Printf.sprintf "%s.(%s)" x y
-  | Put (x, y, z) -> Printf.sprintf "%s.(%s) <- %s" x y z
+  | Get (x, y) -> Printf.sprintf "%s.(%s)" x (to_string_ident y)
+  | Put (x, y, z) -> Printf.sprintf "%s.(%s) <- %s" x (to_string_ident y) z
   | ExtArray x -> Printf.sprintf "ExtArray(%s)" x
   | ExtFunApp (f, args) ->
       Printf.sprintf "ExtCall %s(%s)" f (String.concat " " args)
@@ -79,6 +89,9 @@ let rec to_string_all_fun (all_fun : all_fun) : string =
 
 let to_string (toplevel : toplevel) : string = to_string_all_fun toplevel
 
+let ident_conversion (entry : Net_let.ident) : ident =
+  match entry with IDENT id -> IDENT id | INT i -> INT i
+
 let rec closure_t_rec (net_let : Net_let.t) : t =
   match net_let with
   | Unit -> Unit
@@ -86,19 +99,21 @@ let rec closure_t_rec (net_let : Net_let.t) : t =
   | Not id -> Not id
   | Neg id -> Neg id
   | Var id -> Var id
-  | Add (id1, id2) -> Add (id1, id2)
-  | Sub (id1, id2) -> Sub (id1, id2)
+  | Add (id1, id2) -> Add (id1, ident_conversion id2)
+  | Sub (id1, id2) -> Sub (id1, ident_conversion id2)
+  | Mul (id1, id2) -> Mul (id1, ident_conversion id2)
+  | Div (id1, id2) -> Div (id1, ident_conversion id2)
   | IfEq (id1, id2, t1, t2) ->
-      IfEq (id1, id2, closure_t_rec t1, closure_t_rec t2)
+      IfEq (id1, ident_conversion id2, closure_t_rec t1, closure_t_rec t2)
   | IfLE (id1, id2, t1, t2) ->
-      IfLE (id1, id2, closure_t_rec t1, closure_t_rec t2)
+      IfLE (id1, ident_conversion id2, closure_t_rec t1, closure_t_rec t2)
   | Let (label, t1, t2) -> Let (label, closure_t_rec t1, closure_t_rec t2)
   | LetRec _ -> failwith "not suppose to get here"
   | App (elem, elem_list) -> App (elem, elem_list)
   | Tuple list -> Tuple list
   | LetTuple (label, id, t) -> LetTuple (label, id, closure_t_rec t)
-  | Get (id1, id2) -> Get (id1, id2)
-  | Put (id1, id2, id3) -> Put (id1, id2, id3)
+  | Get (id1, id2) -> Get (id1, ident_conversion id2)
+  | Put (id1, id2, id3) -> Put (id1, ident_conversion id2, id3)
   | ExtArray id -> ExtArray id
   | ExtFunApp (id, id_list) -> ExtFunApp (id, id_list)
 

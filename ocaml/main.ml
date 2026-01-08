@@ -1,6 +1,7 @@
 module Syntax = Core.Syntax
 module Parser = Core.Parser
 module Lexer = Core.Lexer
+module Asml = Core.Asml
 open Frontend
 
 let output_file = ref None
@@ -13,7 +14,7 @@ let verbose = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let output_asml = ref false
-let output_asml_file=ref None
+let output_asml_file= ref None
 let asml_only = ref false
 (*code*)
 let print_ast l =
@@ -24,51 +25,66 @@ let print_knorm k =
 
 let file f = 
   let inchan = open_in f in
+
+  (* Change done here by backend  *)
+  let arm_name = match !output_file with Some s -> s | None -> "output.s" in
+  let oc = open_out arm_name in
+
   try
    (* 1. Parsing *)
     let file_script = Parser.exp Lexer.token (Lexing.from_channel inchan) in
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
 
     (* 2. K-Normalization *)
-    let test_output_k = K_normalization.f file_script in
-    if !verbose then (print_endline "--- K-Norm ---"; print_knorm test_output_k);
+    let output_k = K_normalization.f file_script in
+        if !verbose then (print_endline "--- K-Norm ---"; print_knorm output_k); 
 
     (* 3. Alpha Conversion *)
-    let test_output_alpha = Alpha_conversion.alpha test_output_k in
-      if !verbose then (print_endline "--- Alpha ---"; print_knorm test_output_alpha);
+    let output_alpha = Alpha_conversion.alpha output_k in
+      if !verbose then (print_endline "--- Alpha ---"; print_knorm output_alpha);
       
     (*reduction of nested-let*)
     (* 4. Nested-let reduction *)
-    let nested_expression = Net_let.net_let test_output_alpha in
+    let nested_expression = Net_let.net_let output_alpha in
     if !verbose then (
     print_endline "--- Let-Net ---";
     print_endline (Net_let.to_string nested_expression)
 );
 
     
-   (* let nested_expression = Net_let.net_let test_output_k in*)
-   (* if !verbose then print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression);*)
+    let nested_expression = Net_let.net_let output_alpha in
+    if !verbose then (print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression));
 
     (*closure conversion*)
 
-    (*let closure_expression = Closure.closure nested_expression in*)
-    (*if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);*)
+    let closure_expression = Closure.closure nested_expression in
+    if !verbose then (print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression));
 
     (*ASML generation*)
 
+    let asml = Asml_generation.asml_generator closure_expression in
+    if !verbose then (print_endline "--- ASML ---"; print_endline (Asml.to_string asml));
+    if !output_asml then 
+      (if !verbose then (print_endline "--- WRITING ASML FILE ---");
+      match !output_asml_file with
+      | None -> Asml.write_file asml
+      | Some s -> Asml.write_file ~output_file:s asml
+      );
     (*other transformations*)
 
     (*Take care of input asml here*)
 
-    (*Register allocation*)
+
+    Register_allocation.generate_assembly oc asml;
+
 
     (*ARM allocation*)
-    
-
+      (* Change done here by backend  *)
+    close_out oc;
     close_in inchan
 
 
-  with e -> (close_in inchan; raise e)
+  with e -> (close_out oc; close_in inchan; raise e)
 
 let () = 
   let files = ref [] in

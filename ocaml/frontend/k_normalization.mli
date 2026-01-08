@@ -1,14 +1,18 @@
-open Core
+module Type = Core.Type
+module Id = Core.Id
+module Syntax = Core.Syntax
 
 type t =
-  | Unit
-  | Int of int
+  | Unit 
+  | Int of int 
   | Not of Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
-  | IfEq of Id.t * Id.t * t * t
-  | IfLE of Id.t * Id.t * t * t
+  | Mul of Id.t * Id.t
+  | Div of Id.t * Id.t
+  | IfEq of Id.t * Id.t * t * t 
+  | IfLE of Id.t * Id.t * t * t 
   | Let of (Id.t * Type.t) * t * t
   | Var of Id.t
   | LetRec of fundef * t

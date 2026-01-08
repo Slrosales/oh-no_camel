@@ -1,0 +1,6 @@
+let _ = 
+    let x1 = 
+    let x2 = 1
+    let r1 = x1 in
+    let r2 = x2 in
+    let r3 = add r1 r2

@@ -9,6 +9,8 @@ type t =
   | Neg of t
   | Add of t * t
   | Sub of t * t
+  | Mul of t * t
+  | Div of t * t
   | FNeg of t
   | FAdd of t * t
   | FSub of t * t
@@ -46,6 +48,8 @@ let rec to_string exp =
   | Neg e -> sprintf "(- %s)" (to_string e)
   | Add (e1, e2) -> sprintf "(%s + %s)" (to_string e1) (to_string e2)
   | Sub (e1, e2) -> sprintf "(%s - %s)" (to_string e1) (to_string e2) 
+  | Mul (e1, e2) -> sprintf "(%s * %s)" (to_string e1) (to_string e2) 
+  | Div (e1, e2) -> sprintf "(%s / %s)" (to_string e1) (to_string e2) 
   | FNeg e -> sprintf "(-. %s)" (to_string e)
   | FAdd (e1, e2) -> sprintf "(%s +. %s)" (to_string e1) (to_string e2)
   | FSub (e1, e2) -> sprintf "(%s -. %s)" (to_string e1) (to_string e2) 
