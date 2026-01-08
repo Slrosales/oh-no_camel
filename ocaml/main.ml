@@ -31,16 +31,16 @@ let file f =
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
 
     (* 2. K-Normalization *)
-    let test_output_k = K_normalization.f file_script in
-        if !verbose then (print_endline "--- K-Norm ---"; print_knorm test_output_k); 
+    let output_k = K_normalization.f file_script in
+        if !verbose then (print_endline "--- K-Norm ---"; print_knorm output_k); 
 
     (* 3. Alpha Conversion *)
-    let test_output_alpha = Alpha_conversion.alpha test_output_k in
-      if !verbose then (print_endline "--- Alpha ---"; print_knorm test_output_alpha);
+    let output_alpha = Alpha_conversion.alpha output_k in
+      if !verbose then (print_endline "--- Alpha ---"; print_knorm output_alpha);
       
     (*reduction of nested-let*)
     
-    let nested_expression = Net_let.net_let test_output_k in
+    let nested_expression = Net_let.net_let output_alpha in
     if !verbose then (print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression));
 
     (*closure conversion*)
