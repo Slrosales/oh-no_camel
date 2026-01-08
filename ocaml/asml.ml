@@ -86,10 +86,10 @@ let rec exp_to_string (exp:exp):string = match exp with
 | Callclo (id , id_list) -> "apply_closure " ^ Id.to_string id ^ " " ^ print_list_call id_list
 and
 asmt_to_string (asmt:asmt):string = match asmt with
-| LET (id , exp , asmt) -> "let " ^ Id.to_string id ^ " = " ^ exp_to_string exp ^ " in " ^ asmt_to_string asmt
-| EXP exp -> exp_to_string exp
+| LET (id , exp , asmt) -> "\tlet " ^ Id.to_string id ^ " = " ^ exp_to_string exp ^ " in\n" ^ asmt_to_string asmt
+| EXP exp -> "\t" ^ exp_to_string exp
 let fundef_string (fundef:fundef):string = match fundef with
-| Main asmt -> "let _ = " ^ asmt_to_string asmt
+| Main asmt -> "let _ =\n" ^ asmt_to_string asmt
 | Letfloat (_letfloat , _fundef) -> ""
 | Function  (_letfun ,_fundef) -> ""
 let to_string (toplevel:toplevel):string = fundef_string toplevel
