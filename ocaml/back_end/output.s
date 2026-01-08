@@ -1,0 +1,3 @@
+.text
+.global main
+main:
