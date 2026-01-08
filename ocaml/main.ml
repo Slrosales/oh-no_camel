@@ -30,18 +30,29 @@ let file f =
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
 
     (* 2. K-Normalization *)
-    let knorm = K_normalization.f file_script in
-    if !verbose then (print_endline "--- K-Norm ---"; print_knorm knorm);
+    let test_output_k = K_normalization.f file_script in
+    if !verbose then (print_endline "--- K-Norm ---"; print_knorm test_output_k);
 
-    (* 3. Alpha conversion *)
-    let alpha_script = Alpha_conversion.alpha knorm in
-    if !verbose then (print_endline "--- Alpha ---"; print_knorm alpha_script);
-
-     (* Alpha preserves K_normalization type, so this works *)
-
+    (* 3. Alpha Conversion *)
+    let test_output_alpha = Alpha_conversion.alpha test_output_k in
+      if !verbose then (print_endline "--- Alpha ---"; print_knorm test_output_alpha);
+      
     (*reduction of nested-let*)
+    (* 4. Nested-let reduction *)
+    let nested_expression = Net_let.net_let test_output_alpha in
+    if !verbose then (
+    print_endline "--- Let-Net ---";
+    print_endline (Net_let.to_string nested_expression)
+);
+
     
+   (* let nested_expression = Net_let.net_let test_output_k in*)
+   (* if !verbose then print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression);*)
+
     (*closure conversion*)
+
+    (*let closure_expression = Closure.closure nested_expression in*)
+    (*if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);*)
 
     (*ASML generation*)
 
