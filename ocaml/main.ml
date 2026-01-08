@@ -14,7 +14,7 @@ let verbose = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let output_asml = ref false
-let output_asml_file=ref None
+let output_asml_file= ref None
 let asml_only = ref false
 (*code*)
 let print_ast l =
@@ -32,7 +32,7 @@ let file f =
 
     (* 2. K-Normalization *)
     let test_output_k = K_normalization.f file_script in
-        if !verbose then print_endline "--- K-Norm ---"; print_knorm test_output_k; 
+        if !verbose then (print_endline "--- K-Norm ---"; print_knorm test_output_k); 
 
     (* 3. Alpha Conversion *)
     let test_output_alpha = Alpha_conversion.alpha test_output_k in
@@ -41,18 +41,23 @@ let file f =
     (*reduction of nested-let*)
     
     let nested_expression = Net_let.net_let test_output_k in
-    if !verbose then print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression);
+    if !verbose then (print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression));
 
     (*closure conversion*)
 
     let closure_expression = Closure.closure nested_expression in
-    if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);
+    if !verbose then (print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression));
 
     (*ASML generation*)
 
     let asml = Asml_generation.asml_generator closure_expression in
-    if !verbose then print_endline "--- ASML ---"; print_endline (Asml.to_string asml);
-
+    if !verbose then (print_endline "--- ASML ---"; print_endline (Asml.to_string asml));
+    if !output_asml then 
+      (if !verbose then (print_endline "--- WRITING ASML FILE ---");
+      match !output_asml_file with
+      | None -> Asml.write_file asml
+      | Some s -> Asml.write_file ~output_file:s asml
+      );
     (*other transformations*)
 
     (*Take care of input asml here*)
