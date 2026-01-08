@@ -166,8 +166,9 @@ let generate_assembly oc k_ast =
   emit_asmt oc asml_asmt;
   Printf.fprintf oc "\tsub sp, fp, #4\n\tpop {fp, pc}\n" *)
 
-module K = K_normalization
+module A = Asml
 
+(* Simple stack management *)
 let stack_map = Hashtbl.create 128
 let stack_next = ref (-12) 
 
@@ -184,52 +185,57 @@ let reset_stack () =
   Hashtbl.clear stack_map;
   stack_next := -12
 
-let rec emit_exp oc = function
-  | K.Unit -> ()
-  | K.Int i -> 
-      Printf.fprintf oc "\tmov r0, #%d\n" i
-  | K.Var x -> 
-      let offset = get_slot x in
-      Printf.fprintf oc "\tldr r0, [r11, #%d] @ load variable %s\n" offset x
+(* Helper to load constants or variables into a specific register *)
+let load_ident oc reg = function
+  | A.INT i -> Printf.fprintf oc "\tmov %s, #%d\n" reg i
+  | A.IDENT id -> Printf.fprintf oc "\tldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) id
 
-  (* Handle Arithmetic *)
-  | K.Add (x, y) ->
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot x);
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot y);
+(* 1. Handle the Right-Hand Side of a 'let' or a standalone expression *)
+let emit_exp oc = function
+  | A.Ident ident -> 
+      load_ident oc "r0" ident
+
+  | A.Add (id, ident) ->
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
       Printf.fprintf oc "\tadd r0, r0, r1\n"
-  | K.Sub (x, y) ->
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot x);
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot y);
+
+  | A.Sub (id, ident) ->
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
       Printf.fprintf oc "\tsub r0, r0, r1\n"
 
-  (* Handle External/Library Functions (e.g., print_int) *)
-  | K.App (f, args) | K.ExtFunApp (f, args) ->
-      let label = match f with
-        | "print_int" -> "_min_caml_print_int"
-        | "print_newline" -> "_min_caml_print_newline"
-        | name -> name
-      in
-      List.iteri (fun i a -> 
-        if i < 4 then Printf.fprintf oc "\tldr r%d, [r11, #%d]\n" i (get_slot a)
-      ) args;
-      Printf.fprintf oc "\tbl %s\n" label
+  | A.Neg id ->
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      Printf.fprintf oc "\trsb r0, r1, #0\n"
 
-  (* CRITICAL: Recursive Let handling for nested expressions *)
-  | K.Let ((id, _), e1, e2) ->
-      emit_exp oc e1; (* This handles the "let v0 = 5 in" part *)
+  | _ -> () (* Ignore other types for now to avoid crashes *)
+
+(* 2. Handle the 'LET id = exp in next' chain *)
+let rec emit_asmt oc = function
+  | A.LET (id, exp, next_asmt) ->
+      emit_exp oc exp;
       let offset = get_slot id in
       Printf.fprintf oc "\tstr r0, [r11, #%d] @ store result %s\n" offset id;
-      emit_exp oc e2 (* This continues to the rest of the code *)
+      emit_asmt oc next_asmt
+  | A.EXP exp ->
+      emit_exp oc exp
 
-  | other -> 
-      failwith ("Backend Error: Unhandled node " ^ (K.to_string other))
+(* 3. Main entry point for the ASML tree *)
+let rec generate_assembly oc = function
+  | A.Main asmt ->
+      reset_stack ();
+      Printf.fprintf oc ".text\n.align 2\n.global main\n\nmain:\n";
+      (* Prologue: Setup stack frame *)
+      Printf.fprintf oc "\tpush {r11, r14}\n";
+      Printf.fprintf oc "\tadd r11, r13, #4\n";
+      Printf.fprintf oc "\tsub r13, r13, #1024\n";
 
-let generate_assembly oc k_exp =
-  reset_stack ();
-  Printf.fprintf oc ".text\n.align 2\n.global main\n\nmain:\n";
-  Printf.fprintf oc "\tpush {r11, r14}\n";
-  Printf.fprintf oc "\tadd r11, r13, #4\n";
-  Printf.fprintf oc "\tsub r13, r13, #1024\n";
-  emit_exp oc k_exp;
-  Printf.fprintf oc "\tsub r13, r11, #4\n";
-  Printf.fprintf oc "\tpop {r11, r15}\n"
+      emit_asmt oc asmt;
+
+      (* Epilogue: Restore stack and return *)
+      Printf.fprintf oc "\tsub r13, r11, #4\n";
+      Printf.fprintf oc "\tpop {r11, r15}\n"
+
+  | A.Function (_, next) -> generate_assembly oc next
+  | A.Letfloat (_, next) -> generate_assembly oc next

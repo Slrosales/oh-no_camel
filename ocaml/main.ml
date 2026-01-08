@@ -62,8 +62,10 @@ let file f =
 
     (*Take care of input asml here*)
 
-    (*Register allocation*)
-    Register_allocation.generate_assembly oc test_output_alpha;
+
+    Register_allocation.generate_assembly oc asml;
+
+
     (*ARM allocation*)
       (* Change done here by backend  *)
     close_out oc;
