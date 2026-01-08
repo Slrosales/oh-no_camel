@@ -25,6 +25,11 @@ let print_knorm k =
 
 let file f = 
   let inchan = open_in f in
+
+  (* Change done here by backend  *)
+  let arm_name = match !output_file with Some s -> s | None -> "output.s" in
+  let oc = open_out arm_name in
+
   try
     (* 1. Parsing *)
     let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
@@ -62,15 +67,17 @@ let file f =
 
     (*Take care of input asml here*)
 
-    (*Register allocation*)
+
+    Register_allocation.generate_assembly oc asml;
+
 
     (*ARM allocation*)
-    
-
+      (* Change done here by backend  *)
+    close_out oc;
     close_in inchan
 
 
-  with e -> (close_in inchan; raise e)
+  with e -> (close_out oc; close_in inchan; raise e)
 
 let () = 
   let files = ref [] in
