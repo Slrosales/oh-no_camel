@@ -3,13 +3,6 @@ type ident =
 | INT of int
 | IDENT of Id.t
 
-type condition =
-| EQ
-| LE
-| GE
-| FEQ
-| FLE
-
 type exp =
 | NOP
 | Ident of ident
@@ -25,7 +18,11 @@ type exp =
 | Sub of Id.t * ident
 | MemLoad of Id.t * ident
 | Memstore of Id.t * ident * Id.t
-| If of Id.t * condition * ident * asmt * asmt 
+| IfEQ of Id.t * ident * asmt * asmt 
+| IfLE of Id.t * ident * asmt * asmt 
+| IfGE of Id.t * ident * asmt * asmt 
+| IfFEQ of Id.t * ident * asmt * asmt
+| IfFLE of Id.t * ident * asmt * asmt
 | Call of Id.t * Id.t list
 | Callclo of Id.t * Id.t list
 and asmt =
@@ -59,13 +56,6 @@ let ident_to_string (ident:ident):string = match ident with
 | INT i -> string_of_int i
 | IDENT id -> Id.to_string id
 
-let condition_to_string (condition:condition):string = match condition with
-| EQ -> "EQ"
-| LE -> "LE"
-| GE -> "GE"
-| FEQ -> "FEQ"
-| FLE -> "FLE"
-
 let rec exp_to_string (exp:exp):string = match exp with
 | NOP -> "nop"
 | Ident ident -> ident_to_string ident
@@ -81,7 +71,11 @@ let rec exp_to_string (exp:exp):string = match exp with
 | Sub (id , ident) -> "sub " ^ Id.to_string id ^ " " ^ ident_to_string ident
 | MemLoad (id , int) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int ^ ")"
 | Memstore (id , int1,ident) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int1 ^ ") <-" ^  Id.to_string ident
-| If (id , condition , ident , asmt1 , asmt2) -> "if" ^ condition_to_string condition ^ " " ^ Id.to_string id ^ " " ^ ident_to_string ident ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
+| IfEQ (id, ident , asmt1 , asmt2) -> "ifEQ" ^ Id.to_string id ^ " " ^ ident_to_string ident ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
+| IfLE (id, ident , asmt1 , asmt2) -> "ifLE" ^ Id.to_string id ^ " " ^ ident_to_string ident ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
+| IfGE (id, ident , asmt1 , asmt2) -> "ifGE" ^ Id.to_string id ^ " " ^ ident_to_string ident ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
+| IfFLE (id, ident , asmt1 , asmt2) -> "ifFLE" ^ Id.to_string id ^ " " ^ ident_to_string ident ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
+| IfFEQ (id, ident , asmt1 , asmt2) -> "ifFLE" ^ Id.to_string id ^ " " ^ ident_to_string ident ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
 | Call (id , id_list) -> "call " ^ Id.to_string id ^ " " ^ print_list_call id_list
 | Callclo (id , id_list) -> "apply_closure " ^ Id.to_string id ^ " " ^ print_list_call id_list
 and

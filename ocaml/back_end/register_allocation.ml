@@ -5,7 +5,9 @@ let stack_next = ref (-12)
 
 let get_slot id =
   match Hashtbl.find_opt stack_map id with
-  | Some offset -> offset
+  | Some offset -> 
+      Printf.printf "Slot for %s: %d\n" (Id.to_string id) offset;
+      offset
   | None ->
       let offset = !stack_next in
       Hashtbl.add stack_map id offset;
@@ -16,12 +18,13 @@ let reset_stack () =
   Hashtbl.clear stack_map;
   stack_next := -12
 
+(* Helper to load constants or variables into a specific register *)
 let load_ident oc reg = function
   | A.INT i -> Printf.fprintf oc "\t mov %s, #%d\n" reg i
   | A.IDENT id -> Printf.fprintf oc "\t ldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) id
 
-
-let emit_exp oc = function
+(* 1. Handle the Right-Hand Side of a 'let' or a standalone expression *)
+let rec emit_exp oc = function
   | A.Ident ident -> 
       load_ident oc "r0" ident
 
@@ -42,19 +45,51 @@ let emit_exp oc = function
       ) arg_list;
       Printf.fprintf oc "\t bl %s\n" (Id.to_string func_name)
 
-  | _ -> () (* Operation not implemented *)
+  | A.IfEQ (id, ident, asmt1, asmt2) ->
+      Printf.printf "Evaluating IF-EQUAL statement\n"; (*For debugging*)
+      let branch_equal = "beq" in
+      let branch = branch_equal in
 
+      (*in order to distinguish an if statement for nested conditions by adding a count at the end of label*)
+      let counter = ref 0 in (*ref allows storing and updating a value*)
+      let generating_next_step step = 
+        let current_count = !counter in
+        counter := !counter + 1;
+        Printf.sprintf "%s_%d" step current_count
+      in
 
-let rec emit_asmt oc = function
+      let step_then = generating_next_step "then" in (*label to jump to the then block*)
+      let step_else = generating_next_step "else" in (*label to jump to the else block*)
+      let step_end = generating_next_step "end" in (*label to jump to end block*)
+
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
+      Printf.fprintf oc "\tcmp r0, r1\n";
+
+      Printf.printf "Evaluating THEN block";
+      Printf.fprintf oc "\t%s %s\n" branch step_then;
+      emit_asmt oc asmt1; (*Processing assembly instructions if the condition is correct*)
+      Printf.fprintf oc "\tb %s" step_end;
+
+      Printf.printf "Evaluating ELSE blok";
+      Printf.fprintf oc "\t%s %s\n" branch step_else;
+      emit_asmt oc asmt2; (*Processing assembly instructions if the condition is incorrect*)
+      Printf.fprintf oc "%s:\n" step_end;
+
+  | _ -> () (*Ignore other types for now to avoid crashes*)
+
+and emit_asmt oc = function
   | A.LET (id, exp, next_asmt) ->
+      Printf.printf "Evaluating LET\n";
       emit_exp oc exp;
       let offset = get_slot id in
       Printf.fprintf oc "\t str r0, [r11, #%d] @ store result %s\n" offset id;
       emit_asmt oc next_asmt
   | A.EXP exp ->
-      emit_exp oc exp      
-      
-      
+      Printf.printf "Evaluating EXP\n";
+      emit_exp oc exp
+
+
 let rec generate_assembly oc = function
   | A.Function (func, next_inst) ->
       reset_stack ();
