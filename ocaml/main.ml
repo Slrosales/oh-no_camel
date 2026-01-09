@@ -16,7 +16,6 @@ let parse_only = ref false
 let output_asml = ref false
 let output_asml_file= ref None
 let asml_only = ref false
-(*code*)
 let print_ast l =
   print_string (Syntax.to_string l); print_newline ()
 
@@ -35,7 +34,7 @@ let file f =
     let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
 
-    (* 1.5 Type Checking (NEW) *)
+    (* 1.5 Type Checking *)
     let typed_script = Typechecking.f file_script in
     if !type_check_only then exit 0;
 
@@ -67,16 +66,11 @@ let file f =
       | None -> Asml.write_file asml
       | Some s -> Asml.write_file ~output_file:s asml
       );
-    (*other transformations*)
-
-    (*Take care of input asml here*)
-
 
     Register_allocation.generate_assembly oc asml;
 
 
     (*ARM allocation*)
-      (* Change done here by backend  *)
     close_out oc;
     close_in inchan
 
