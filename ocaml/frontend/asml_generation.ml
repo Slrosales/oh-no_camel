@@ -13,6 +13,8 @@ let rec closure_rec (closure:Closure.t):Asml.exp = match closure with
 | Neg t -> Neg t
 | Add (t1,t2) -> Add (t1,convert_ident t2) (*Can change if improvement*)
 | Sub (t1 , t2) -> Sub (t1,convert_ident t2)
+| Mul (t1 , t2) -> Mul (t1,convert_ident t2)
+| Div (t1 , t2) -> Div (t1,convert_ident t2)
 | Get (t1 , t2) -> MemLoad (t1,convert_ident t2) 
 | Put (t1 , t2 , t3) -> Memstore (t1,convert_ident t2,t3)
 
@@ -24,7 +26,7 @@ let rec closure_rec (closure:Closure.t):Asml.exp = match closure with
 | LetTuple ( _type_list , _t1 , _t2 ) -> failwith ""
 
 | ExtArray _t -> failwith ""
-| ExtFunApp (_name,_list_arg) -> failwith ""
+| ExtFunApp (_name,_list_arg) -> failwith "not implemented yet"
 | _ -> failwith "Not suppose to be here"
 and closure_rec_let (closure:Closure.t):Asml.asmt =match closure with
   | Let ((id , _) , t1 , t2) -> LET (id, closure_rec t1,closure_rec_let t2)

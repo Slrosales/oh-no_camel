@@ -23,6 +23,8 @@ type exp =
 | New of ident
 | Add of Id.t * ident
 | Sub of Id.t * ident
+| Mul of Id.t * ident
+| Div of Id.t * ident
 | MemLoad of Id.t * ident
 | Memstore of Id.t * ident * Id.t
 | If of Id.t * condition * ident * asmt * asmt 
@@ -79,6 +81,8 @@ let rec exp_to_string (exp:exp):string = match exp with
 | New ident -> "new " ^ ident_to_string ident
 | Add (id , ident) -> "add " ^ Id.to_string id ^ " " ^ ident_to_string ident
 | Sub (id , ident) -> "sub " ^ Id.to_string id ^ " " ^ ident_to_string ident
+| Mul (id , ident) -> "mul " ^ Id.to_string id ^ " " ^ ident_to_string ident
+| Div (id , ident) -> "div " ^ Id.to_string id ^ " " ^ ident_to_string ident
 | MemLoad (id , int) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int ^ ")"
 | Memstore (id , int1,ident) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int1 ^ ") <-" ^  Id.to_string ident
 | If (id , condition , ident , asmt1 , asmt2) -> "if" ^ condition_to_string condition ^ " " ^ Id.to_string id ^ " " ^ ident_to_string ident ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
