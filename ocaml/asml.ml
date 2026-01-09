@@ -80,20 +80,6 @@ let fundef_string (fundef:fundef):string = match fundef with
 | Function  (_letfun ,_fundef) -> ""
 let to_string (toplevel:toplevel):string = fundef_string toplevel
 
-and asmt_to_string (asmt : asmt) : string =
-  match asmt with
-  | LET (id, exp, asmt) ->
-      "\tlet " ^ Id.to_string id ^ " = " ^ exp_to_string exp ^ " in\n"
-      ^ asmt_to_string asmt
-  | EXP exp -> "\t" ^ exp_to_string exp
-
-let fundef_string (fundef : fundef) : string =
-  match fundef with
-  | Main asmt -> "let _ =\n" ^ asmt_to_string asmt
-  | Letfloat (_letfloat, _fundef) -> ""
-  | Function (_letfun, _fundef) -> ""
-
-let to_string (toplevel : toplevel) : string = fundef_string toplevel
 
 let write_file ?(output_file = "output.asml") (asml : toplevel) : unit =
   let output_file_channel = open_out output_file in
