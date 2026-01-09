@@ -22,6 +22,7 @@ type t =
   | IfEq of Id.t * ident * t * t
   | IfLE of Id.t * ident * t * t
   | Let of (Id.t * Type.t) * t * t
+  | LetRec of fundef * t
   | Var of Id.t
   | App of Id.t * Id.t list (*note we have now apply_direct(l, (x1 … xn))*)
   | Tuple of Id.t list
@@ -30,8 +31,9 @@ type t =
   | Put of Id.t * ident * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
+ 
 
-type fundef = { name : Id.t; args : Id.t list; body : t }
+and fundef = { name : Id.t; args : Id.t list; body : t }
 (*rename label by adding _*)
 
 type all_fun = Fun of fundef * all_fun | Main of t
@@ -108,7 +110,12 @@ let rec closure_t_rec (net_let : Net_let.t) : t =
   | IfLE (id1, id2, t1, t2) ->
       IfLE (id1, ident_conversion id2, closure_t_rec t1, closure_t_rec t2)
   | Let (label, t1, t2) -> Let (label, closure_t_rec t1, closure_t_rec t2)
-  | LetRec _ -> failwith "not suppose to get here"
+  | LetRec (fundef,t2) ->
+    let fname, _fty = fundef.Net_let.name in 
+       let fargs = List.map fst fundef.Net_let.args in
+     let fbody = closure_t_rec fundef.Net_let.body in 
+   LetRec ({name = fundef.name; args = fundef.args; body = closure_t_rec fundef.body},
+   closure_rec t2)
   | App (elem, elem_list) -> App (elem, elem_list)
   | Tuple list -> Tuple list
   | LetTuple (label, id, t) -> LetTuple (label, id, closure_t_rec t)
@@ -117,9 +124,15 @@ let rec closure_t_rec (net_let : Net_let.t) : t =
   | ExtArray id -> ExtArray id
   | ExtFunApp (id, id_list) -> ExtFunApp (id, id_list)
 
-let closure_fun_rec (net_let : Net_let.t) : all_fun =
+and closure_fun_rec(net_let : Net_let.t): all_fun =
   match net_let with
-  | LetRec _ -> failwith "to implement closure"
-  | remain -> Main (closure_t_rec remain)
+  | Net_let.LetRec (fundef,e) -> 
+     let (fname,_fty) = fundef.Net_let.name in
+     let fargs = List.map fst fundef.Net_let.args in
+     let fbody = closure_t_rec fundef.Net_let.body in 
+     let lifted_fun = {name = fname; args = fargs; body= fbody} in 
+     let rest = closure_fun_rec e in 
+     Fun (lifted_fun, rest)
+  | other -> Main (closure_t_rec other)
 
 let closure (net_let : Net_let.t) : toplevel = closure_fun_rec net_let
