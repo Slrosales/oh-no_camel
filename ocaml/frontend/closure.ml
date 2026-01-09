@@ -110,11 +110,7 @@ let rec closure_t_rec (net_let : Net_let.t) : t =
   | IfLE (id1, id2, t1, t2) ->
       IfLE (id1, ident_conversion id2, closure_t_rec t1, closure_t_rec t2)
   | Let (label, t1, t2) -> Let (label, closure_t_rec t1, closure_t_rec t2)
-  | LetRec (fundef,t2) ->
-    let fname, _fty = fundef.Net_let.name in 
-       let fargs = List.map fst fundef.Net_let.args in
-     let fbody = closure_t_rec fundef.Net_let.body in 
-   LetRec ({name = fundef.name; args = fundef.args; body = closure_t_rec fundef.body},
+  | LetRec (fundef,t2) -> LetRec ({name = fundef.name; args = fundef.args; body = closure_t_rec fundef.body},
    closure_rec t2)
   | App (elem, elem_list) -> App (elem, elem_list)
   | Tuple list -> Tuple list
@@ -127,7 +123,7 @@ let rec closure_t_rec (net_let : Net_let.t) : t =
 and closure_fun_rec(net_let : Net_let.t): all_fun =
   match net_let with
   | Net_let.LetRec (fundef,e) -> 
-     let (fname,_fty) = fundef.Net_let.name in
+     let fname = fundef.Net_let.name in
      let fargs = List.map fst fundef.Net_let.args in
      let fbody = closure_t_rec fundef.Net_let.body in 
      let lifted_fun = {name = fname; args = fargs; body= fbody} in 
