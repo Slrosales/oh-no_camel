@@ -1,4 +1,5 @@
-module A = Asml
+module A = Core.Asml
+module Id = Core.Id
 
 let stack_map = Hashtbl.create 128
 let stack_next = ref (-12) 

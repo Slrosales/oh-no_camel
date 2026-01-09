@@ -1,6 +1,8 @@
 module Id = Core.Id
 module Type = Core.Type
 
+(*TODO complete for float maybe*)
+
 type ident = 
 | INT of int
 | IDENT of Id.t
@@ -61,7 +63,6 @@ let rec to_string = function
   | ExtFunApp (f, args) ->
       Printf.sprintf "ExtCall %s(%s)" f (String.concat " " args)
 
-(*Do nothing for the moment need to be modify in the future*)
 let _is_a_let (let_t:t):bool = match let_t with 
 | Let _ -> true
 | _ -> false
@@ -81,7 +82,6 @@ flatten (let_tree:t):t = match let_tree with
 | Let (label,t1,t2) -> Let (label,t1,t2) 
 | _ -> let_tree
 
-(*TODO finish the net_let_rec*)
 let ident_from_int (entry : int) : ident = INT entry
 let ident_from_id (entry : Id.t) : ident = IDENT entry
 
@@ -114,5 +114,4 @@ let rec net_let_rec (knormal : K_normalization.t) : t =
   | Put (id1, id2, id3) -> Put (id1, ident_from_id id2, id3)
   | ExtArray id -> ExtArray id
   | ExtFunApp (id, id_list) -> ExtFunApp (id, id_list)
-
 let net_let (knormal : K_normalization.t) : t = net_let_rec knormal
