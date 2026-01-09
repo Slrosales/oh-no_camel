@@ -29,32 +29,24 @@ and asmt =
 | LET of Id.t * exp * asmt
 | EXP of exp
 
-type letfun = {
-  name : Id.t;
-  args : Id.t list;
-  body : asmt;
-}
-type letfloat = { 
-  name : Id.t;
-  args : Id.t list;
-  body : asmt;
-} 
+type letfun = { name : Id.t; args : Id.t list; body : asmt }
+type letfloat = { name : Id.t; args : Id.t list; body : asmt }
 
-type fundef = 
-| Main of asmt
-| Letfloat of letfloat * fundef
-| Function of letfun * fundef
+type fundef =
+  | Main of asmt
+  | Letfloat of letfloat * fundef
+  | Function of letfun * fundef
 
 type toplevel = fundef
 
-let rec print_list_call x =match x with
-| [] -> "()"
-| elem::[] -> Id.to_string elem
-| elem::td -> Id.to_string elem ^ " " ^ print_list_call td 
+let rec print_list_call x =
+  match x with
+  | [] -> "()"
+  | elem :: [] -> Id.to_string elem
+  | elem :: td -> Id.to_string elem ^ " " ^ print_list_call td
 
-let ident_to_string (ident:ident):string = match ident with
-| INT i -> string_of_int i
-| IDENT id -> Id.to_string id
+let ident_to_string (ident : ident) : string =
+  match ident with INT i -> string_of_int i | IDENT id -> Id.to_string id
 
 let rec exp_to_string (exp:exp):string = match exp with
 | NOP -> "nop"
@@ -88,6 +80,21 @@ let fundef_string (fundef:fundef):string = match fundef with
 | Function  (_letfun ,_fundef) -> ""
 let to_string (toplevel:toplevel):string = fundef_string toplevel
 
-let write_file ?(output_file="output.asml") (asml:toplevel) :unit =
+and asmt_to_string (asmt : asmt) : string =
+  match asmt with
+  | LET (id, exp, asmt) ->
+      "\tlet " ^ Id.to_string id ^ " = " ^ exp_to_string exp ^ " in\n"
+      ^ asmt_to_string asmt
+  | EXP exp -> "\t" ^ exp_to_string exp
+
+let fundef_string (fundef : fundef) : string =
+  match fundef with
+  | Main asmt -> "let _ =\n" ^ asmt_to_string asmt
+  | Letfloat (_letfloat, _fundef) -> ""
+  | Function (_letfun, _fundef) -> ""
+
+let to_string (toplevel : toplevel) : string = fundef_string toplevel
+
+let write_file ?(output_file = "output.asml") (asml : toplevel) : unit =
   let output_file_channel = open_out output_file in
   Printf.fprintf output_file_channel "%s" (to_string asml)

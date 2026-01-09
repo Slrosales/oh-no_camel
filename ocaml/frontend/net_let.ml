@@ -67,20 +67,30 @@ let _is_a_let (let_t:t):bool = match let_t with
 | Let _ -> true
 | _ -> false
 
-let rec _get_last_after_in (let_t:t):t = match let_t with
-| Let (_,_,Let(label,t1,t2)) -> _get_last_after_in (Let(label,t1,t2))
-| Let (_,_,t3) -> t3
-| _ -> let_t
+let rec _get_last_after_in (let_t : t) : t =
+  match let_t with
+  | Let (_, _, Let (label, t1, t2)) -> _get_last_after_in (Let (label, t1, t2))
+  | Let (_, _, t3) -> t3
+  | _ -> let_t
 
-let rec let_build (inside_let:t)(label:(Id.t*Type.t))(after_in:t):t = match inside_let with
-| Let (label_inside,t1_inside,Let(label2,t1,t2)) -> Let(label_inside,t1_inside,(let_build (Let(label2,t1,t2))(label)(after_in)))
-| Let (label_inside,t1_inside,t2_inside) -> Let (label_inside,t1_inside,Let(label,t2_inside,after_in)) 
-| _ -> failwith "error let_build take only Let in inside_let"
-and
-flatten (let_tree:t):t = match let_tree with
-| Let (label1,Let(label2,t1,t2),t3) -> let flatten_t2 = flatten (Let(label2,t1,t2)) in let_build flatten_t2 label1 t3
-| Let (label,t1,t2) -> Let (label,t1,t2) 
-| _ -> let_tree
+let rec let_build (inside_let : t) (label : Id.t * Type.t) (after_in : t) : t =
+  match inside_let with
+  | Let (label_inside, t1_inside, Let (label2, t1, t2)) ->
+      Let
+        ( label_inside,
+          t1_inside,
+          let_build (Let (label2, t1, t2)) label after_in )
+  | Let (label_inside, t1_inside, t2_inside) ->
+      Let (label_inside, t1_inside, Let (label, t2_inside, after_in))
+  | _ -> failwith "error let_build take only Let in inside_let"
+
+and flatten (let_tree : t) : t =
+  match let_tree with
+  | Let (label1, Let (label2, t1, t2), t3) ->
+      let flatten_t2 = flatten (Let (label2, t1, t2)) in
+      let_build flatten_t2 label1 t3
+  | Let (label, t1, t2) -> Let (label, t1, t2)
+  | _ -> let_tree
 
 let ident_from_int (entry : int) : ident = INT entry
 let ident_from_id (entry : Id.t) : ident = IDENT entry
@@ -98,9 +108,7 @@ let rec net_let_rec (knormal : K_normalization.t) : t =
       IfEq (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
   | IfLE (id1, id2, t1, t2) ->
       IfLE (id1, ident_from_id id2, net_let_rec t1, net_let_rec t2)
-
-  | Let (label, t1, t2) ->flatten (Let (label, net_let_rec t1, net_let_rec t2))
-
+  | Let (label, t1, t2) -> flatten (Let (label, net_let_rec t1, net_let_rec t2))
   | LetRec (fundef, t) ->
       let name = fundef.name in
       let args = fundef.args in
