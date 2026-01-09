@@ -35,8 +35,12 @@ let file f =
     let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
 
+    (* 1.5 Type Checking (NEW) *)
+    let typed_script = Typechecking.f file_script in
+    if !type_check_only then exit 0;
+
     (* 2. K-Normalization *)
-    let output_k = K_normalization.f file_script in
+    let output_k = K_normalization.f typed_script in
         if !verbose then (print_endline "--- K-Norm ---"; print_knorm output_k); 
 
     (* 3. Alpha Conversion *)
