@@ -2,7 +2,9 @@ module Syntax = Core.Syntax
 module Parser = Core.Parser
 module Lexer = Core.Lexer
 module Asml = Core.Asml
+module Type = Core.Type
 open Frontend
+open Back_end
 
 let output_file = ref None
 let _usage_message = ""
