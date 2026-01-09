@@ -96,8 +96,12 @@ let push_stack (IDENT id) =
   )
 
 let find_index (IDENT id) =  
-  try Hashtbl.find stack_map id  
-  with Not_found -> failwith ("Variable not found: " ^ (Id.to_string id))
+  try 
+    Hashtbl.find stack_map id  
+  with 
+  | Not_found -> 
+      Printf.printf "Variable not found: %s\n" (id.to_string id);
+      failwith ("Variable not found: " ^ (Id.to_string id))
 
 (* 1. Helper to load 'ident' types (could be INT or IDENT) into a register *)
 let load_ident oc id reg =

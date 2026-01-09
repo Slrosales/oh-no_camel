@@ -32,31 +32,43 @@ let file f =
 
   try
     (* 1. Parsing *)
+    Printf.printf "Starting: AST\n";
     let file_script = (Parser.exp Lexer.token (Lexing.from_channel  inchan)) in
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
+    Printf.printf "Ending: AST\n\n";
 
     (* 2. K-Normalization *)
+    Printf.printf "Starting: K-Norm\n";
     let test_output_k = K_normalization.f file_script in
         if !verbose then print_endline "--- K-Norm ---"; print_knorm test_output_k; 
+    Printf.printf "Ending: K-Norm\n\n";
 
     (* 3. Alpha Conversion *)
+    Printf.printf "Starting: Alpha conversion\n";
     let test_output_alpha = Alpha_conversion.alpha test_output_k in
       if !verbose then (print_endline "--- Alpha ---"; print_knorm test_output_alpha);
+    Printf.printf "Ending: Alpha conversion\n\n";
       
     (*reduction of nested-let*)
     
+    Printf.printf "Starting: Nested-Let\n";
     let nested_expression = Net_let.net_let test_output_k in
     if !verbose then print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression);
+    Printf.printf "Ending: Nested-Let\n\n";
 
     (*closure conversion*)
 
+    Printf.printf "Starting: Closure\n";
     let closure_expression = Closure.closure nested_expression in
     if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);
+    Printf.printf "Ending: Closure\n\n";
 
     (*ASML generation*)
 
+    Printf.printf "Starting: ASML\n";
     let asml = Asml_generation.asml_generator closure_expression in
     if !verbose then print_endline "--- ASML ---"; print_endline (Asml.to_string asml);
+    Printf.printf "Ending: ASML\n\n";
 
     (*other transformations*)
 

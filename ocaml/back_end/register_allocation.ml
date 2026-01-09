@@ -174,7 +174,9 @@ let stack_next = ref (-12)
 
 let get_slot id =
   match Hashtbl.find_opt stack_map id with
-  | Some offset -> offset
+  | Some offset -> 
+      Printf.printf "Slot for %s: %d\n" (Id.to_string id) offset;
+      offset
   | None ->
       let offset = !stack_next in
       Hashtbl.add stack_map id offset;
