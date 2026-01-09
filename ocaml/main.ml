@@ -14,9 +14,8 @@ let verbose = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let output_asml = ref false
-let output_asml_file=ref None
+let output_asml_file= ref None
 let asml_only = ref false
-(*code*)
 let print_ast l =
   print_string (Syntax.to_string l); print_newline ()
 
@@ -37,7 +36,12 @@ let file f =
     if !verbose then (print_endline "--- AST ---"; print_ast file_script);
     Printf.printf "Ending: AST\n\n";
 
+    (* 1.5 Type Checking *)
+    let typed_script = Typechecking.f file_script in
+    if !type_check_only then exit 0;
+
     (* 2. K-Normalization *)
+<<<<<<< HEAD
     Printf.printf "Starting: K-Norm\n";
     let test_output_k = K_normalization.f file_script in
         if !verbose then print_endline "--- K-Norm ---"; print_knorm test_output_k; 
@@ -55,18 +59,36 @@ let file f =
     let nested_expression = Net_let.net_let test_output_k in
     if !verbose then print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression);
     Printf.printf "Ending: Nested-Let\n\n";
+=======
+    let output_k = K_normalization.f typed_script in
+        if !verbose then (print_endline "--- K-Norm ---"; print_knorm output_k); 
+
+    (* 3. Alpha Conversion *)
+    let output_alpha = Alpha_conversion.alpha output_k in
+      if !verbose then (print_endline "--- Alpha ---"; print_knorm output_alpha);
+      
+    (*reduction of nested-let*)
+    
+    let nested_expression = Net_let.net_let output_alpha in
+    if !verbose then (print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression));
+>>>>>>> 67983343cb59e6827e745720755204f134313571
 
     (*closure conversion*)
 
     Printf.printf "Starting: Closure\n";
     let closure_expression = Closure.closure nested_expression in
+<<<<<<< HEAD
     if !verbose then print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression);
     Printf.printf "Ending: Closure\n\n";
+=======
+    if !verbose then (print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression));
+>>>>>>> 67983343cb59e6827e745720755204f134313571
 
     (*ASML generation*)
 
     Printf.printf "Starting: ASML\n";
     let asml = Asml_generation.asml_generator closure_expression in
+<<<<<<< HEAD
     if !verbose then print_endline "--- ASML ---"; print_endline (Asml.to_string asml);
     Printf.printf "Ending: ASML\n\n";
 
@@ -74,12 +96,20 @@ let file f =
 
     (*Take care of input asml here*)
 
+=======
+    if !verbose then (print_endline "--- ASML ---"; print_endline (Asml.to_string asml));
+    if !output_asml then 
+      (if !verbose then (print_endline "--- WRITING ASML FILE ---");
+      match !output_asml_file with
+      | None -> Asml.write_file asml
+      | Some s -> Asml.write_file ~output_file:s asml
+      );
+>>>>>>> 67983343cb59e6827e745720755204f134313571
 
     Register_allocation.generate_assembly oc asml;
 
 
     (*ARM allocation*)
-      (* Change done here by backend  *)
     close_out oc;
     close_in inchan
 

@@ -87,3 +87,7 @@ let fundef_string (fundef:fundef):string = match fundef with
 | Letfloat (_letfloat , _fundef) -> ""
 | Function  (_letfun ,_fundef) -> ""
 let to_string (toplevel:toplevel):string = fundef_string toplevel
+
+let write_file ?(output_file="output.asml") (asml:toplevel) :unit =
+  let output_file_channel = open_out output_file in
+  Printf.fprintf output_file_channel "%s" (to_string asml)

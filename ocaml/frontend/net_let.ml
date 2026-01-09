@@ -62,12 +62,12 @@ let rec to_string = function
       Printf.sprintf "ExtCall %s(%s)" f (String.concat " " args)
 
 (*Do nothing for the moment need to be modify in the future*)
-let is_a_let (let_t:t):bool = match let_t with 
+let _is_a_let (let_t:t):bool = match let_t with 
 | Let _ -> true
 | _ -> false
 
-let rec get_last_after_in (let_t:t):t = match let_t with
-| Let (_,_,Let(label,t1,t2)) -> get_last_after_in (Let(label,t1,t2))
+let rec _get_last_after_in (let_t:t):t = match let_t with
+| Let (_,_,Let(label,t1,t2)) -> _get_last_after_in (Let(label,t1,t2))
 | Let (_,_,t3) -> t3
 | _ -> let_t
 
