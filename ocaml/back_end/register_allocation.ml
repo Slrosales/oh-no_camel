@@ -168,7 +168,7 @@ let generate_assembly oc k_ast =
 
 module A = Asml
 
-(* Stack creation *)
+(* Simple stack management *)
 let stack_map = Hashtbl.create 128
 let stack_next = ref (-12) 
 
@@ -187,6 +187,7 @@ let reset_stack () =
   Hashtbl.clear stack_map;
   stack_next := -12
 
+(* Helper to load constants or variables into a specific register *)
 let load_ident oc reg = function
   | A.INT i -> Printf.fprintf oc "\tmov %s, #%d\n" reg i
   | A.IDENT id -> Printf.fprintf oc "\tldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) id
@@ -212,7 +213,38 @@ let rec emit_exp oc = function
       Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
       Printf.fprintf oc "\trsb r0, r1, #0\n"
 
-  | A.If (id, condition, ident, asmt1, asmt2) ->
+  | A.IfEQ (id, ident, asmt1, asmt2) ->
+      Printf.printf "Evaluating IF-EQUAL statement\n"; (*For debugging*)
+      let branch_equal = "beq" in
+      let branch = branch_equal in
+
+      (*in order to distinguish an if statement for nested conditions by adding a count at the end of label*)
+      let counter = ref 0 in (*ref allows storing and updating a value*)
+      let generating_next_step step = 
+        let current_count = !counter in
+        counter := !counter + 1;
+        Printf.sprintf "%s_%d" step current_count
+      in
+
+      let step_then = generating_next_step "then" in (*label to jump to the then block*)
+      let step_else = generating_next_step "else" in (*label to jump to the else block*)
+      let step_end = generating_next_step "end" in (*label to jump to end block*)
+
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
+      Printf.fprintf oc "\tcmp r0, r1\n";
+
+      Printf.printf "Evaluating THEN block";
+      Printf.fprintf oc "\t%s %s\n" branch step_then;
+      emit_asmt oc asmt1; (*Processing assembly instructions if the condition is correct*)
+      Printf.fprintf oc "\tb %s" step_end;
+
+      Printf.printf "Evaluating ELSE blok";
+      Printf.fprintf oc "\t%s %s\n" branch step_else;
+      emit_asmt oc asmt2; (*Processing assembly instructions if the condition is incorrect*)
+      Printf.fprintf oc "%s:\n" step_end;
+
+  (* | A.If (id, condition, ident, asmt1, asmt2) ->
       Printf.printf "Evaluating IF statement\n";
       let branch_equal = "beq" in
       let branch_less_equal = "ble" in
@@ -250,9 +282,9 @@ let rec emit_exp oc = function
       Printf.printf "Evaluating THEN statement\n";
       Printf.fprintf oc "%s:\n" step_then;
       emit_asmt oc asmt2;
-      Printf.fprintf oc "%s:\n" step_end
+      Printf.fprintf oc "%s:\n" step_end*)
 
-  | _ -> () (* Ignore other types for now to avoid crashes *)
+  | _ -> () (*Ignore other types for now to avoid crashes*)
 
 (* 2. Handle the 'LET id = exp in next' chain *)
 and emit_asmt oc = function
@@ -266,20 +298,19 @@ and emit_asmt oc = function
       Printf.printf "Evaluating EXP\n";
       emit_exp oc exp
 
-
+(* 3. Main entry point for the ASML tree *)
 let rec generate_assembly oc = function
   | A.Main asmt ->
       reset_stack ();
       Printf.fprintf oc ".text\n.align 2\n.global main\n\nmain:\n";
-
-      (* Prologue *)
+      (* Prologue: Setup stack frame *)
       Printf.fprintf oc "\tpush {r11, r14}\n";
       Printf.fprintf oc "\tadd r11, r13, #4\n";
       Printf.fprintf oc "\tsub r13, r13, #1024\n";
 
       emit_asmt oc asmt;
 
-      (* Epilogue *)
+      (* Epilogue: Restore stack and return *)
       Printf.fprintf oc "\tsub r13, r11, #4\n";
       Printf.fprintf oc "\tpop {r11, r15}\n"
 
