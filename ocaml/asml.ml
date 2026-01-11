@@ -48,6 +48,13 @@ let rec print_list_call x =
   | elem :: [] -> Id.to_string elem
   | elem :: td -> Id.to_string elem ^ " " ^ print_list_call td
 
+let rec print_list_args x =
+  match x with
+  | [] -> ""
+  | elem :: [] -> Id.to_string elem
+  | elem :: td -> Id.to_string elem ^ " " ^ print_list_call td
+
+
 let ident_to_string (ident_or_imm : ident_or_imm) : string =
   match ident_or_imm with INT i -> string_of_int i | IDENT id -> Id.to_string id
 
@@ -69,21 +76,21 @@ let rec exp_to_string (exp:exp):string = match exp with
 | Div (id, ident_or_imm) -> "div " ^ Id.to_string id ^ " " ^ ident_to_string ident_or_imm
 | MemLoad (id , int) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int ^ ")"
 | Memstore (id , int1,ident_or_imm) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int1 ^ ") <-" ^  Id.to_string ident_or_imm
-| IfEQ (id, ident_or_imm , asmt1 , asmt2) -> "ifEQ" ^ Id.to_string id ^ " " ^ ident_to_string ident_or_imm ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
-| IfLE (id, ident_or_imm , asmt1 , asmt2) -> "ifLE" ^ Id.to_string id ^ " " ^ ident_to_string ident_or_imm ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
-| IfGE (id, ident_or_imm , asmt1 , asmt2) -> "ifGE" ^ Id.to_string id ^ " " ^ ident_to_string ident_or_imm ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
-| IfFLE (id, id2 , asmt1 , asmt2) -> "ifFLE" ^ Id.to_string id ^ " " ^ id2 ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
-| IfFEQ (id, id2 , asmt1 , asmt2) -> "ifFLE" ^ Id.to_string id ^ " " ^ id2 ^ " " ^ asmt_to_string asmt1 ^ " " ^ asmt_to_string asmt2
-| Call (id , id_list) -> "call " ^ Id.to_string id ^ " " ^ print_list_call id_list
-| Callclo (id , id_list) -> "apply_closure " ^ Id.to_string id ^ " " ^ print_list_call id_list
+| IfEQ (id, ident_or_imm , asmt1 , asmt2) -> "ifEQ " ^ Id.to_string id ^ "=" ^ ident_to_string ident_or_imm ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| IfLE (id, ident_or_imm , asmt1 , asmt2) -> "ifLE " ^ Id.to_string id ^ "<=" ^ ident_to_string ident_or_imm ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| IfGE (id, ident_or_imm , asmt1 , asmt2) -> "ifGE " ^ Id.to_string id ^ ">=" ^ ident_to_string ident_or_imm ^ " then (\n" ^ asmt_to_string asmt1 ^ " \n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| IfFLE (id, id2 , asmt1 , asmt2) -> "ifFLE " ^ Id.to_string id ^ "<=" ^ id2 ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| IfFEQ (id, id2 , asmt1 , asmt2) -> "ifFEQ " ^ Id.to_string id ^ "=" ^ id2 ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| Call (id , id_list) -> "call (" ^ Id.to_string id ^ "," ^ print_list_call id_list ^")"
+| Callclo (id , id_list) -> "apply_closure (" ^ Id.to_string id ^ "," ^ print_list_call id_list^")"
 and
 asmt_to_string (asmt:asmt):string = match asmt with
 | LET (id , exp , asmt) -> "\tlet " ^ Id.to_string id ^ " = " ^ exp_to_string exp ^ " in\n" ^ asmt_to_string asmt
 | EXP exp -> "\t" ^ exp_to_string exp
-let fundef_string (fundef:fundef):string = match fundef with
+let rec fundef_string (fundef:fundef):string = match fundef with
 | Main asmt -> "let _ =\n" ^ asmt_to_string asmt
-| Letfloat (_letfloat , _fundef) -> ""
-| Function  (_letfun ,_fundef) -> ""
+| Letfloat (letfloat , fundef) -> "let " ^ letfloat.name ^ " = " ^ (string_of_float letfloat.float_let) ^ "\n" ^ (fundef_string fundef)
+| Function  (letfun ,fundef) -> "let " ^letfun.name ^" "^(print_list_args letfun.args)^" =(\n"^asmt_to_string letfun.body ^"\n)\n" ^ fundef_string fundef
 let to_string (toplevel:toplevel):string = fundef_string toplevel
 
 

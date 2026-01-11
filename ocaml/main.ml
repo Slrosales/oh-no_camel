@@ -39,7 +39,7 @@ let file f =
   try
     let asml = 
     match !asml_input_mod with
-    | true -> (
+    | false -> (
     (* 1. Parsing *)
     let file_script = Parser.exp Lexer.token (Lexing.from_channel inchan) in
     if !verbose then (
@@ -89,7 +89,7 @@ let file f =
     (*ASML generation*)
     Printf.printf "Starting: ASML\n";
     Asml_generation.asml_generator closure_expression)
-    | false -> (Parser_asml.toplevel Lexer_asml.token (Lexing.from_channel inchan)) in
+    | true -> (Parser_asml.toplevel Lexer_asml.token (Lexing.from_channel inchan)) in
     if !parse_only then (print_endline "\n--- ASML ---";
                         print_endline (Asml.to_string asml);
                         exit(0);
