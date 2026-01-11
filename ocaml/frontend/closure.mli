@@ -26,7 +26,7 @@ type t =
   | ExtFunApp of Id.t * Id.t list
 
 and fundef = { name : Id.t; args : Id.t list; body : t }
-(*rename label by adding _*)
+(*rename label by adding _ in front for exemple function f become '_f' *)
 
 type all_fun = Fun of fundef * all_fun | Main of t
 type toplevel = all_fun
