@@ -1,6 +1,6 @@
 module Asml = Core.Asml
 
-let convert_ident (closure : Closure.ident) : Asml.ident =
+let convert_ident (closure : Closure.ident) : Asml.ident_or_imm =
   match closure with INT i -> Asml.INT i | IDENT id -> Asml.IDENT id
 
 let rec closure_rec (closure : Closure.t) : Asml.exp =

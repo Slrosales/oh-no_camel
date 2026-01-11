@@ -3,6 +3,8 @@ module Parser = Core.Parser
 module Lexer = Core.Lexer
 module Asml = Core.Asml
 module Type = Core.Type
+module Lexer_asml = Core.Lexer_asml
+module Parser_asml = Core.Parser_asml
 open Frontend
 open Back_end
 
@@ -16,6 +18,8 @@ let parse_only = ref false
 let output_asml = ref false
 let output_asml_file = ref None
 let asml_only = ref false
+
+let asml_input_mod = ref false
 
 let print_ast l =
   print_string (Syntax.to_string l);
@@ -33,11 +37,16 @@ let file f =
   let oc = open_out arm_name in
 
   try
+    let asml = 
+    match !asml_input_mod with
+    | true -> (
     (* 1. Parsing *)
     let file_script = Parser.exp Lexer.token (Lexing.from_channel inchan) in
     if !verbose then (
       print_endline "--- AST ---";
       print_ast file_script);
+
+    if !parse_only then exit 0;
 
     (* 1.5 Type Checking *)
     let typed_script =
@@ -79,7 +88,12 @@ let file f =
 
     (*ASML generation*)
     Printf.printf "Starting: ASML\n";
-    let asml = Asml_generation.asml_generator closure_expression in
+    Asml_generation.asml_generator closure_expression)
+    | false -> (Parser_asml.toplevel Lexer_asml.token (Lexing.from_channel inchan)) in
+    if !parse_only then (print_endline "\n--- ASML ---";
+                        print_endline (Asml.to_string asml);
+                        exit(0);
+      );
     if !verbose then (
       print_endline "\n--- ASML ---";
       print_endline (Asml.to_string asml));
@@ -125,17 +139,17 @@ let () =
             exit 0),
         "Print version" );
       ("-verbose", Arg.Set verbose, "Activate verbose");
-      ("-t", Arg.Set type_check_only, "Only execute up to type checking");
-      ("-p", Arg.Set parse_only, "Only execute up to parsing");
+      ("-type_only", Arg.Set type_check_only, "Only execute up to type checking");
+      ("-parsing_only", Arg.Set parse_only, "Only execute up to parsing");
+      ("-asml_input_mod",Arg.Set asml_input_mod,"Read asml file from the input file you enter");
       ("-asml", Arg.Set output_asml, "Produce asml_output_file");
       ( "-asml_output",
         Arg.String (fun s -> output_asml_file := Some s),
         "output asml file name" );
-      ("-asml_only", Arg.Set asml_only, "Only execute upt to asml");
     ]
     (fun s -> files := !files @ [ s ])
     (Printf.sprintf
-       "usage: %s [-h/-help] [-v] [-verbose] [-t] [-p] [-asml] [-asml_only] \
+       "usage: %s [-h/-help] [-v] [-verbose] [-type_only] [-parsing_only] [-asml_input_mod] [-asml] \
         [-asml_output output_asml_file] [-o output_file] filenames"
        Sys.argv.(0));
 
