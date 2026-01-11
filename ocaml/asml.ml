@@ -52,7 +52,7 @@ let rec print_list_args x =
   match x with
   | [] -> ""
   | elem :: [] -> Id.to_string elem
-  | elem :: td -> Id.to_string elem ^ " " ^ print_list_call td
+  | elem :: td -> Id.to_string elem ^ " " ^ print_list_args td
 
 
 let ident_to_string (ident_or_imm : ident_or_imm) : string =

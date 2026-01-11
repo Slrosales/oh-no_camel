@@ -30,15 +30,14 @@ and closure_rec_let (closure : Closure.t) : Asml.asmt =
   | Let ((id, _), t1, t2) -> LET (id, closure_rec t1, closure_rec_let t2)
   | _ -> EXP (closure_rec closure)
 
-let rec function_creation (closure : Closure.all_fun) : Asml.fundef =
+let rec creation_function (closure : Closure.all_fun) : Asml.fundef =
   match closure with
   | Fun (fundef, b) ->
       let name = fundef.name in
       let args = fundef.args in
       let body = closure_rec_let fundef.body in
       let newfundef : Asml.letfun = { name; args; body } in
-      Function (newfundef, function_creation b)
+      Function (newfundef, creation_function b)
   | Main t -> Main (closure_rec_let t)
 
-let asml_generator (closure : Closure.toplevel) : Asml.toplevel =
-  function_creation closure
+let asml_generator (closure : Closure.toplevel) : Asml.toplevel = creation_function (closure)
