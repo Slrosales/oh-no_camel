@@ -109,7 +109,7 @@ let rec generate_assembly oc = function
       emit_asmt oc func.body;      
 
       Printf.fprintf oc "\t sub r13, r11, #4\n";
-      Printf.fprintf oc "\t pop {r11, r15}\n";
+      Printf.fprintf oc "\t pop {r11, r14}\n";
       
       generate_assembly oc next_inst
 
