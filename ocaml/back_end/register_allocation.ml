@@ -52,21 +52,23 @@ let rec emit_exp oc = function
           Printf.sprintf "%s" step;
       in
 
-      let step_substraction_loop = generating_next_step "substruction loop" in
+      let step_subtraction_loop = generating_next_step "subtraction loop" in 
       let step_end = generating_next_step "end" in
       let branch_greater_equal = "bge" in
 
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
-      load_ident oc "r1" ident_or_imm;
-      Printf.fprintf oc "\tmov r2, #0\n"; 
-
-      Printf.fprintf oc "%s:" step_substraction_loop;
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id); (*Loading dividend to r1*)
+      load_ident oc "r1" ident_or_imm; (*Loading divisor to r0*)
+      Printf.fprintf oc "\tmov r2, #0\n"; (*r2 for the result*)
+      
+      (*Keep subtracting until the divisor is greater than the dividend*)
+      Printf.fprintf oc "%s:" step_subtraction_loop;
       Printf.fprintf oc "\tcmp r1, r0\n";
       Printf.fprintf oc "\t%s %s\n" branch_greater_equal step_end;
       Printf.fprintf oc "\tsub r0, r0, r1\n";
-      Printf.fprintf oc "\tadd r2, r2, #1\n";
-      Printf.fprintf oc "\tb %s" step_substraction_loop;
+      Printf.fprintf oc "\tadd r2, r2, #1\n"; (*The result is incremented at each loop*)
+      Printf.fprintf oc "\tb %s" step_subtraction_loop;
 
+      (*End block, after the loop is terminated*)
       Printf.fprintf oc "%s:\n" step_end
 
   | A.FAdd (id1, id2) ->
