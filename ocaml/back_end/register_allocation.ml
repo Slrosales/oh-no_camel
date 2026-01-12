@@ -115,7 +115,7 @@ let rec generate_assembly oc = function
 
   | A.Main asmt ->
       reset_stack ();
-      Printf.fprintf oc ".text \n.global main\n\n main:\n";
+      Printf.fprintf oc ".text \n.global _start\n\n _start:\n";
 
       (* Prologue *)
       Printf.fprintf oc "\t push {r11, r14}\n";
@@ -126,4 +126,4 @@ let rec generate_assembly oc = function
 
       (* Epilogue *)
       Printf.fprintf oc "\t sub r13, r11, #4\n";
-      Printf.fprintf oc "\t pop {r11, r15}\n"
+      Printf.fprintf oc "\t pop {r11, r14}\n"
