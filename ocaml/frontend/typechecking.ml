@@ -1,5 +1,9 @@
 (* This code was made following the documentation quoted in the report *)
-open Syntax
+module Syntax = Core.Syntax
+module Type = Core.Type
+module Id = Core.Id
+
+
 
 exception Type_Error of Syntax.t * Type.t * Type.t
 
@@ -60,7 +64,7 @@ let rec unify t1 t2 =
       failwith "Arrays are not supported in Mid-Project."
   | _ -> raise (Type_Error (Syntax.Unit, t1, t2))
 
-let rec infer env e =
+let rec infer env (e:Syntax.t) =
   match e with
   | Unit -> Type.Unit
   | Bool _ -> Type.Bool
@@ -116,7 +120,7 @@ let rec infer env e =
       failwith "Array operations are NOT implemented for Mid-Project."
 
 (* ENTRY POINT *)
-let f e =
+let f (e:Core.Syntax.t): Core.Syntax.t =
   extenv := Id.M.empty;
 
   let t_main = infer Id.M.empty e in

@@ -79,7 +79,7 @@ exp: /* expressions */
 | MINUS exp
     %prec prec_unary_minus
     { match $2 with
-    | Float(f) -> Float(-.f) (* -1.23などは型エラーではないので別扱い *)
+    | Float(f) -> Float(-.f) (* -1.23鐃淑どは件申鐃緒申鐃初ー鐃叔はなわ申鐃塾わ申鐃縮逸申鐃緒申 *)
     | e -> Neg(e) }
 | exp PLUS exp /* addition */
     { Add($1, $3) }
