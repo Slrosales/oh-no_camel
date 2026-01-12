@@ -16,6 +16,7 @@ type exp =
 | New of ident
 | Add of Id.t * ident
 | Sub of Id.t * ident
+| Mul of Id.t * ident
 | MemLoad of Id.t * ident
 | Memstore of Id.t * ident * Id.t
 | IfEQ of Id.t * ident * asmt * asmt 
