@@ -19,7 +19,7 @@ let output_asml = ref false
 let output_asml_file = ref None
 let asml_only = ref false
 
-let asml_input_mod = ref false
+let asml_input_mode = ref false
 
 let print_ast l =
   print_string (Syntax.to_string l);
@@ -38,7 +38,7 @@ let file f =
 
   try
     let asml = 
-    match !asml_input_mod with
+    match !asml_input_mode with
     | false -> (
     (* 1. Parsing *)
     let file_script = Parser.exp Lexer.token (Lexing.from_channel inchan) in
@@ -141,7 +141,7 @@ let () =
       ("-verbose", Arg.Set verbose, "Activate verbose");
       ("-type_only", Arg.Set type_check_only, "Only execute up to type checking");
       ("-parsing_only", Arg.Set parse_only, "Only execute up to parsing");
-      ("-asml_input_mod",Arg.Set asml_input_mod,"Read asml file from the input file you enter");
+      ("-asml_input_mode",Arg.Set asml_input_mode,"Read asml file from the input file you enter");
       ("-asml", Arg.Set output_asml, "Produce asml_output_file");
       ( "-asml_output",
         Arg.String (fun s -> output_asml_file := Some s),
@@ -149,7 +149,7 @@ let () =
     ]
     (fun s -> files := !files @ [ s ])
     (Printf.sprintf
-       "usage: %s [-h/-help] [-v] [-verbose] [-type_only] [-parsing_only] [-asml_input_mod] [-asml] \
+       "usage: %s [-h/-help] [-v] [-verbose] [-type_only] [-parsing_only] [-asml_input_mode] [-asml] \
         [-asml_output output_asml_file] [-o output_file] filenames"
        Sys.argv.(0));
 
