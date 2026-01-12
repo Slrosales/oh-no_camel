@@ -15,7 +15,6 @@ type t =
   | IfEq of Id.t * ident * t * t
   | IfLE of Id.t * ident * t * t
   | Let of (Id.t * Type.t) * t * t
-  | LetRec of fundef * t 
   | Var of Id.t
   | App of Id.t * Id.t list (*note we have now apply_direct(l, (x1 … xn))*)
   | Tuple of Id.t list
