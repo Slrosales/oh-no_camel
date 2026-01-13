@@ -1,7 +1,7 @@
 .text 
-.global main
+.global _start
 
- main:
+ _start:
 	 push {r11, r14}
 	 add r11, r13, #4
 	 sub r13, r13, #1024
@@ -10,4 +10,5 @@
 	 ldr r0, [r11, #-12] @ load x
 	 bl _min_caml_print_int
 	 sub r13, r11, #4
-	 pop {r11, r15}
+	 pop {r11, r14}
+	 bl _min_caml_exit
