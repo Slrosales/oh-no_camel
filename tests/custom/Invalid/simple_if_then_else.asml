@@ -1,0 +1,7 @@
+let _ :
+    let x = 1
+    let y = 2
+    if x = y then
+        let z = x + x
+    else
+        let z = y + y
