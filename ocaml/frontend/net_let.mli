@@ -10,6 +10,8 @@ type t =
   | Neg of Id.t
   | Add of Id.t * ident
   | Sub of Id.t * ident
+  | Mul of Id.t * ident
+  | Div of Id.t * ident
   | IfEq of Id.t * ident * t * t
   | IfLE of Id.t * ident * t * t
   | Let of (Id.t * Type.t) * t * t

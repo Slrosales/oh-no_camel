@@ -62,11 +62,11 @@ let rec f (e : Syntax.t) : t =
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Add (x, y)))
   | Syntax.Sub (e1, e2) ->
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Sub (x, y)))
-  (* 'if e1 then e2 else e3', we check what e1 is *)
   | Syntax.Mul (e1, e2) ->
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Mul (x, y)))
   | Syntax.Div (e1, e2) ->
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Div (x, y)))
+  (* 'if e1 then e2 else e3', we check what e1 is *)
   | Syntax.If (e1, e2, e3) -> (
       match e1 with
       | Syntax.Not e -> f (Syntax.If (e, e3, e2))
