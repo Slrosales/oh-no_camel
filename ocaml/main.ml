@@ -67,6 +67,7 @@ let file f =
     if !verbose then (
       print_endline "\n--- K-Norm ---";
       print_knorm output_k);
+    Printf.printf "Ending: K-Norm\n\n";
 
     (* 3. Alpha Conversion *)
     Printf.printf "Starting: Alpha conversion\n";

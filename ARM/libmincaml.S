@@ -139,3 +139,40 @@ _min_caml_print_int:
 	ldmfd	sp!, {lr}
         bx	lr
         .size _min_caml_print_int, .-_min_caml_print_int
+
+
+
+
+
+@ =================================================================
+@ SOURCE: _min_caml_create_array
+@ =================================================================
+_min_caml_create_array:
+    @ Input:  r0 = size (number of elements to allocate)
+    @ Output: r0 = starting address of the new array
+    
+    ldr r1, =hp_ptr          @ Load address of our 'Heap Pointer' variable
+    ldr r2, [r1]             @ r2 = current 'top' of the heap memory
+    mov r3, r2               @ Save this current address to return in r0
+    
+    @ ASML uses 32-bit integers, so we multiply elements by 4 bytes
+    lsl r0, r0, #2           @ r0 = r0 * 4
+    
+    add r2, r2, r0           @ Move the heap pointer forward by 'size' bytes
+    str r2, [r1]             @ Store the new 'top' back into hp_ptr variable
+    
+    mov r0, r3               @ Return the original address (start of array)
+    bx  lr                   @ Return to caller
+
+@ =================================================================
+@ DATA & MEMORY RESERVATION
+@ =================================================================
+.data
+.align 2
+hp_ptr: 
+    .word heap_memory        @ Variable holding the address of the next free byte
+
+.section .bss
+.align 4
+heap_memory:
+    .space 10240             @ Reserve 10KB of blank space for all your arrays

@@ -1,0 +1,10 @@
+let _ =
+    let x = 1 in
+    let y = 2 in
+    if x = y then (
+        let z = x + x in
+        z
+    ) else (
+        let z = y + y in
+        z
+    )

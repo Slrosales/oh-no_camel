@@ -29,15 +29,122 @@ let rec emit_exp oc = function
   | A.Ident ident -> 
       load_ident oc "r0" ident
 
-  | A.Add (id, ident) ->
+  | A.Add (id, ident_or_imm) ->
       Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot id);
-      load_ident oc "r1" ident;
-      Printf.fprintf oc "\t add r0, r0, r1\n"
+      load_ident oc "r1" ident_or_imm;
+      Printf.fprintf oc "\tadd r0, r0, r1\n"
 
-  | A.Sub (id, ident) ->
+  | A.Sub (id, ident_or_imm) ->
       Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot id);
-      load_ident oc "r1" ident;
-      Printf.fprintf oc "\t sub r0, r0, r1\n"
+      load_ident oc "r1" ident_or_imm;
+      Printf.fprintf oc "\tsub r0, r0, r1\n"
+
+  | A.Mul (id, ident_or_imm) ->
+      Printf.printf "Evaluating MULTIPLICATION\n";
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident_or_imm;
+      Printf.fprintf oc "\tmul r0, r0, r1\n"
+
+  (* | A.Div (id, ident_or_imm) ->
+      Printf.printf "Evaluating DIVISION\n";
+
+      let generating_next_step step =
+          Printf.sprintf "%s" step;
+      in
+
+      let step_subtraction_loop = generating_next_step "subtraction loop" in 
+      let step_end = generating_next_step "end" in
+      let branch_greater_equal = "bge" in
+
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id); (*Loading dividend to r1*)
+      load_ident oc "r1" ident_or_imm; (*Loading divisor to r0*)
+      Printf.fprintf oc "\tmov r2, #0\n"; (*r2 for the result*)
+      
+      (*Keep subtracting until the divisor is greater than the dividend*)
+      Printf.fprintf oc "%s:" step_subtraction_loop;
+      Printf.fprintf oc "\tcmp r1, r0\n";
+      Printf.fprintf oc "\t%s %s\n" branch_greater_equal step_end;
+      Printf.fprintf oc "\tsub r0, r0, r1\n";
+      Printf.fprintf oc "\tadd r2, r2, #1\n"; (*The result is incremented at each loop*)
+      Printf.fprintf oc "\tb %s" step_subtraction_loop;
+
+      (*End block, after the loop is terminated*)
+      Printf.fprintf oc "%s:\n" step_end *)
+
+
+   (* CREATE an array *)
+  | A.New ident_or_imm ->
+    load_ident oc "r0" ident_or_imm;     
+    Printf.fprintf oc "\t lsl r0, r0, #2\n";    
+    Printf.fprintf oc "\t bl _min_caml_alloc\n"; 
+
+    
+    (* GET from array *)
+  | A.MemLoad (arr_id, offset_ident) ->
+    Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);
+    load_ident oc "r1" offset_ident;                    
+    Printf.fprintf oc "\t ldr r0, [r0, r1]\n"
+
+  (* PUT to array *)
+  | A.Memstore (arr_id, offset_ident, val_id) ->
+    Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);  
+    load_ident oc "r1" offset_ident;     
+    Printf.fprintf oc "\t ldr r2, [r11, #%d]\n" (get_slot val_id);  
+    Printf.fprintf oc "\t str r2, [r0, r1]\n"  
+
+
+  | A.Div (id, ident_or_imm) ->
+        Printf.printf "Evaluating DIVISION\n";
+
+
+        let step_subtraction_loop = "subtraction_loop" in 
+        let step_end = "subtraction_end" in
+
+
+        Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot id); 
+        load_ident oc "r1" ident_or_imm; 
+        Printf.fprintf oc "\t mov r2, #0\n"; 
+
+
+        Printf.fprintf oc "%s:\n" step_subtraction_loop;
+        
+   
+        Printf.fprintf oc "\t cmp r0, r1\n";
+        Printf.fprintf oc "\t blt %s\n" step_end; (* Branch if Less Than to end *)
+        
+        Printf.fprintf oc "\t sub r0, r0, r1\n";
+        Printf.fprintf oc "\t add r2, r2, #1\n";
+        
+        (* Jump back to loop *)
+        Printf.fprintf oc "\t b %s\n" step_subtraction_loop;
+
+        (* End block and STORE result *)
+        Printf.fprintf oc "%s:\n" step_end;
+        Printf.fprintf oc "\t str r2, [r11, #%d]\n" (get_slot id);
+        Printf.fprintf oc "\t mov r0, r2\n";                     
+
+
+  | A.FAdd (id1, id2) ->
+      Printf.printf "Evaluating FLOAT-ADDITION\n";
+      Printf.fprintf oc "tldr r0, [r11, #%d]\n" (get_slot id1);
+      Printf.fprintf oc "tldr r1, [r11, #%d]\n" (get_slot id2);
+      Printf.fprintf oc "\tfadd r0, r0, r1\n"
+
+  | A.FSub (id1, id2) ->
+      Printf.printf "Evaluating FLOAT-SUBSTRUCTION\n";
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id1);
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id2);
+      Printf.fprintf oc "\tfsub r0, r0, r1\n"
+
+  | A.FMul (id1, id2) ->
+      Printf.printf "Evaluating FLOAT-MULTIPLICATION\n";
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id1);
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id2);
+      Printf.fprintf oc "\tfmul r0, r0, r1\n"
+
+  | A.Neg id ->
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      Printf.fprintf oc "\trsb r0, r1, #0\n"
 
   | A.Call (func_name, arg_list) ->
       List.iteri (fun i arg_id ->
@@ -67,14 +174,74 @@ let rec emit_exp oc = function
       load_ident oc "r1" ident;
       Printf.fprintf oc "\tcmp r0, r1\n";
 
-      Printf.printf "Evaluating THEN block";
+      Printf.printf "Evaluating THEN block\n";
       Printf.fprintf oc "\t%s %s\n" branch step_then;
       emit_asmt oc asmt1; (*Processing assembly instructions if the condition is correct*)
       Printf.fprintf oc "\tb %s" step_end;
 
-      Printf.printf "Evaluating ELSE blok";
+      Printf.printf "Evaluating ELSE blok\n";
       Printf.fprintf oc "\t%s %s\n" branch step_else;
       emit_asmt oc asmt2; (*Processing assembly instructions if the condition is incorrect*)
+      Printf.fprintf oc "%s:\n" step_end;
+
+  | A.IfLE (id, ident, asmt1, asmt2) ->
+      Printf.printf "Evaluating IF-LESS-THAN-EQUAL statement\n";
+      let branch_less_equal = "ble" in
+      let branch = branch_less_equal in
+
+      let counter = ref 0 in
+      let generating_next_step step =
+        let current_count = !counter in
+        counter := !counter + 1;
+        Printf.sprintf "%s_%d" step current_count
+      in
+
+      let step_then = generating_next_step "then" in
+      let step_else = generating_next_step "else" in
+      let step_end = generating_next_step "end" in
+
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
+      Printf.fprintf oc "\tcomp r0, r1\n";
+
+      Printf.printf "Evaluating THEN block\n";
+      Printf.fprintf oc "\t%s %s\n" branch step_then;
+      emit_asmt oc asmt1;
+      Printf.fprintf oc "\tb %s" step_end;
+
+      Printf.printf "Evaluating ELSE block\n";
+      Printf.fprintf oc "\t%s %s\n" branch step_else;
+      emit_asmt oc asmt2;
+      Printf.fprintf oc "%s:\n" step_end;
+
+  | A.IfGE (id, ident, asmt1, asmt2) ->
+      Printf.printf "Evaluating IF-GREATER-THAN-EQUAL statement\n";
+      let branch_greater_equal = "bge" in
+      let branch = branch_greater_equal in
+
+      let counter = ref 0 in
+      let generating_next_step step =
+        let current_count = !counter in
+        counter := !counter + 1;
+        Printf.sprintf "%s_%d" step current_count
+      in
+        
+      let step_then = generating_next_step "then" in
+      let step_else = generating_next_step "else" in
+      let step_end = generating_next_step "end" in
+
+      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      load_ident oc "r1" ident;
+      Printf.fprintf oc "\tcmp r0, r1\n";
+
+      Printf.printf "Evaluating THEN block\n";
+      Printf.fprintf oc "\t%s %s\n" branch step_then;
+      emit_asmt oc asmt1;
+      Printf.fprintf oc "\tb %s\n" step_end;
+
+      Printf.printf "Evaluating ELSE block\n";
+      Printf.fprintf oc "\t%s %s\n" branch step_else;
+      emit_asmt oc asmt2;
       Printf.fprintf oc "%s:\n" step_end;
 
   | _ -> () (*Ignore other types for now to avoid crashes*)
@@ -98,7 +265,7 @@ let rec generate_assembly oc = function
     
       Printf.fprintf oc "\t push {r11, r14}\n";
       Printf.fprintf oc "\t add r11, r13, #4\n";
-      Printf.fprintf oc "\t sub r13, r13, #1024 @ reserve frame\n";
+      Printf.fprintf oc "\t sub r13, r13, #1024 @ reqserve frame\n";
 
       List.iteri (fun i param_id ->
         if i < 4 then
