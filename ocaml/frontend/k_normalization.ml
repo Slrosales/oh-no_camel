@@ -52,9 +52,10 @@ let rec f (e : Syntax.t) : t =
   match e with
   | Syntax.Unit -> Unit
   | Syntax.Bool b -> Int (if b then 1 else 0) (* Syntax.Bool -> KNormal.Int *)
-  | Syntax.Int i ->
-      let id = Id.gentmp Type.Int in
-      Let ((id, Type.Int), Int i, Var id)
+  | Syntax.Int i -> let id = Id.gentmp Type.Int in
+                   Let ((id,Type.Int), Int i, Var id)
+                   
+   
   | Syntax.Var x -> Var x
   | Syntax.Not e -> insert_let (f e) (fun x -> Not x)
   | Syntax.Neg e -> insert_let (f e) (fun x -> Neg x)

@@ -11,8 +11,8 @@ type t =
   | Sub of Id.t * Id.t
   | Mul of Id.t * Id.t
   | Div of Id.t * Id.t
-  | IfEq of Id.t * Id.t * t * t
-  | IfLE of Id.t * Id.t * t * t
+  | IfEq of Id.t * Id.t * t * t 
+  | IfLE of Id.t * Id.t * t * t 
   | Let of (Id.t * Type.t) * t * t
   | Var of Id.t
   | LetRec of fundef * t
