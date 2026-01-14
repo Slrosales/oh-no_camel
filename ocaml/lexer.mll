@@ -32,6 +32,10 @@ rule token = parse
     { MINUS }
 | '+'
     { PLUS }
+| '*' 
+    { AST }
+| '/'
+    { SLASH }
 | "-."
     { MINUS_DOT }
 | "+."
