@@ -20,10 +20,11 @@ let rec alpha_rec env e =
   | K.Unit -> K.Unit
   | K.Int i -> K.Int i
   | K.Neg x -> K.Neg (find x env)
+  | K.Not x -> K.Not (find x env)
   | K.Add (x, y) -> K.Add (find x env, find y env)
   | K.Sub (x, y) -> K.Sub (find x env, find y env)
-  | K.Mul (x,y) -> K.Mul(find x env, find y env)
-  | K.Div (x,y) -> K.Div(find x env, find y env)
+  | K.Mul (x, y) -> K.Mul (find x env, find y env)
+  | K.Div (x, y) -> K.Div (find x env, find y env)
   | K.IfEq (x, y, e1, e2) ->
       K.IfEq (find x env, find y env, alpha_rec env e1, alpha_rec env e2)
   | K.IfLE (x, y, e1, e2) ->
@@ -62,6 +63,21 @@ let rec alpha_rec env e =
       K.LetRec ({ K.name = (x', t); K.args = new_args; K.body = e1' }, e2')
   | K.App (x, ys) -> K.App (find x env, List.map (fun y -> find y env) ys)
   | K.ExtFunApp (x, ys) -> K.ExtFunApp (x, List.map (fun y -> find y env) ys)
-  | _ -> K.Unit (* IMPLEMENT LATER Tuples/Arrays later *)
+  | K.Tuple xs -> K.Tuple (List.map (fun x -> find x env) xs)
+  | K.LetTuple (xts, y, e) ->
+      let y' = find y env in
+
+      (* Generate new names for x, y, z... in let (x,y,z) = ... *)
+      let env', new_xts =
+        List.fold_right
+          (fun (x, t) (env_acc, args_acc) ->
+            let x' = Id.genid_ x in
+            (M.add x x' env_acc, (x', t) :: args_acc))
+          xts (env, [])
+      in
+      K.LetTuple (new_xts, y', alpha_rec env' e)
+  | K.Get (x, y) -> K.Get (find x env, find y env)
+  | K.Put (x, y, z) -> K.Put (find x env, find y env, find z env)
+  | K.ExtArray x -> K.ExtArray x 
 
 let alpha t = alpha_rec M.empty t

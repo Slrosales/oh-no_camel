@@ -3,8 +3,6 @@ module Syntax = Core.Syntax
 module Type = Core.Type
 module Id = Core.Id
 
-
-
 exception Type_Error of Syntax.t * Type.t * Type.t
 
 (* Environment for external functions *)
@@ -32,7 +30,7 @@ let rec default_to_int t =
   | Type.Array t -> Type.Array (default_to_int t)
   | Type.Var ({ contents = None } as r) ->
       Format.eprintf
-        "uninstantiated type variable detected; defaulting to int@.";
+        "uninstantiated type variable detected; defaulting to int\n";
       r := Some Type.Int;
       Type.Int
   | Type.Var ({ contents = Some t } as r) ->
@@ -47,24 +45,23 @@ let rec unify t1 t2 =
   let t2 = deref_typ t2 in
   match (t1, t2) with
   | Type.Unit, Type.Unit | Type.Bool, Type.Bool | Type.Int, Type.Int -> ()
-  (* Float is technically valid in Type.t, but we don't support operations on it *)
   | Type.Float, Type.Float -> ()
   | Type.Fun (args1, ret1), Type.Fun (args2, ret2) ->
       if List.length args1 <> List.length args2 then
         raise (Type_Error (Syntax.Unit, t1, t2));
       List.iter2 unify args1 args2;
       unify ret1 ret2
-  (* Variable Logic *)
+  | Type.Tuple ts1, Type.Tuple ts2 ->
+      if List.length ts1 <> List.length ts2 then
+        raise (Type_Error (Syntax.Unit, t1, t2));
+      List.iter2 unify ts1 ts2
+  | Type.Array t1, Type.Array t2 -> unify t1 t2
   | Type.Var r1, Type.Var r2 when r1 == r2 -> ()
   | Type.Var r1, _ -> r1 := Some t2
   | _, Type.Var r2 -> r2 := Some t1
-  | Type.Tuple _, _ | _, Type.Tuple _ ->
-      failwith "Tuples are not supported in Mid-Project."
-  | Type.Array _, _ | _, Type.Array _ ->
-      failwith "Arrays are not supported in Mid-Project."
   | _ -> raise (Type_Error (Syntax.Unit, t1, t2))
 
-let rec infer env (e:Syntax.t) =
+let rec infer env (e : Syntax.t) =
   match e with
   | Unit -> Type.Unit
   | Bool _ -> Type.Bool
@@ -75,7 +72,7 @@ let rec infer env (e:Syntax.t) =
   | Neg e ->
       unify (infer env e) Type.Int;
       Type.Int
-  | Add (e1, e2) | Sub (e1, e2) ->
+  | Add (e1, e2) | Sub (e1, e2) | Mul (e1, e2) | Div (e1, e2) ->
       unify (infer env e1) Type.Int;
       unify (infer env e2) Type.Int;
       Type.Int
@@ -112,15 +109,29 @@ let rec infer env (e:Syntax.t) =
       let t_ret = Type.gentyp () in
       unify (infer env f) (Type.Fun (List.map (infer env) args, t_ret));
       t_ret
+  | Tuple es -> Type.Tuple (List.map (infer env) es)
+  | LetTuple (xts, e1, e2) ->
+      unify (Type.Tuple (List.map snd xts)) (infer env e1);
+      infer (List.fold_left (fun env (x, t) -> Id.M.add x t env) env xts) e2
+  | Array (e1, e2) ->
+      unify (infer env e1) Type.Int;
+      let t2 = infer env e2 in
+      if t2 = Type.Float then failwith "Float Arrays not supported";
+      Type.Array t2
+  | Get (e1, e2) ->
+      let t = Type.gentyp () in
+      unify (infer env e1) (Type.Array t);
+      unify (infer env e2) Type.Int;
+      t
+  | Put (e1, e2, e3) ->
+      let t = infer env e3 in
+      unify (infer env e1) (Type.Array t);
+      unify (infer env e2) Type.Int;
+      Type.Unit
   | Float _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ ->
-      failwith "Float operations are NOT implemented for Mid-Project."
-  | Tuple _ | LetTuple _ ->
-      failwith "Tuple operations are NOT implemented for Mid-Project."
-  | Array _ | Get _ | Put _ ->
-      failwith "Array operations are NOT implemented for Mid-Project."
+      failwith "Float operations are NOT supported"
 
-(* ENTRY POINT *)
-let f (e:Core.Syntax.t): Core.Syntax.t =
+let f (e : Core.Syntax.t) : Core.Syntax.t =
   extenv := Id.M.empty;
 
   let t_main = infer Id.M.empty e in
@@ -129,4 +140,4 @@ let f (e:Core.Syntax.t): Core.Syntax.t =
   extenv := Id.M.map default_to_int !extenv;
   ignore (default_to_int (infer Id.M.empty e));
 
-  e
+  
