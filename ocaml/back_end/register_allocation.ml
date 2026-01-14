@@ -39,11 +39,6 @@ let rec emit_exp oc = function
       load_ident oc "r1" ident;
       Printf.fprintf oc "\t sub r0, r0, r1\n"
 
-  | A.Mul (id, ident) ->
-      Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot id);
-      load_ident oc "r1" ident;
-      Printf.fprintf oc "\t mul r0, r0, r1\n"
-
   | A.Call (func_name, arg_list) ->
       List.iteri (fun i arg_id ->
         let reg_name = "r" ^ (string_of_int i) in
