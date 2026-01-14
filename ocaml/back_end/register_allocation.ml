@@ -45,7 +45,7 @@ let rec emit_exp oc = function
       load_ident oc "r1" ident_or_imm;
       Printf.fprintf oc "\tmul r0, r0, r1\n"
 
-  | A.Div (id, ident_or_imm) ->
+  (* | A.Div (id, ident_or_imm) ->
       Printf.printf "Evaluating DIVISION\n";
 
       let generating_next_step step =
@@ -69,7 +69,38 @@ let rec emit_exp oc = function
       Printf.fprintf oc "\tb %s" step_subtraction_loop;
 
       (*End block, after the loop is terminated*)
-      Printf.fprintf oc "%s:\n" step_end
+      Printf.fprintf oc "%s:\n" step_end *)
+
+  | A.Div (id, ident_or_imm) ->
+        Printf.printf "Evaluating DIVISION\n";
+
+
+        let step_subtraction_loop = "subtraction_loop" in 
+        let step_end = "subtraction_end" in
+
+
+        Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot id); 
+        load_ident oc "r1" ident_or_imm; 
+        Printf.fprintf oc "\t mov r2, #0\n"; 
+
+
+        Printf.fprintf oc "%s:\n" step_subtraction_loop;
+        
+   
+        Printf.fprintf oc "\t cmp r0, r1\n";
+        Printf.fprintf oc "\t blt %s\n" step_end; (* Branch if Less Than to end *)
+        
+        Printf.fprintf oc "\t sub r0, r0, r1\n";
+        Printf.fprintf oc "\t add r2, r2, #1\n";
+        
+        (* Jump back to loop *)
+        Printf.fprintf oc "\t b %s\n" step_subtraction_loop;
+
+        (* End block and STORE result *)
+        Printf.fprintf oc "%s:\n" step_end;
+        Printf.fprintf oc "\t str r2, [r11, #%d]\n" (get_slot id);
+        Printf.fprintf oc "\t mov r0, r2\n";                     
+
 
   | A.FAdd (id1, id2) ->
       Printf.printf "Evaluating FLOAT-ADDITION\n";
