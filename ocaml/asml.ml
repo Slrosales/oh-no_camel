@@ -6,7 +6,7 @@ type ident_or_imm =
 type exp =
 | NOP
 | Ident of ident_or_imm
-| Float of float
+| Float of float (*TODO delete this line*)
 | Label of Id.t
 | Neg of Id.t
 | FNeg of Id.t

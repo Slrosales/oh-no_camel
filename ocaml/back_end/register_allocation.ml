@@ -212,7 +212,7 @@ let rec generate_assembly oc = function
     
       Printf.fprintf oc "\t push {r11, r14}\n";
       Printf.fprintf oc "\t add r11, r13, #4\n";
-      Printf.fprintf oc "\t sub r13, r13, #1024 @ reserve frame\n";
+      Printf.fprintf oc "\t sub r13, r13, #1024 @ reqserve frame\n";
 
       List.iteri (fun i param_id ->
         if i < 4 then
