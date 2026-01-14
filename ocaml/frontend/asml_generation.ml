@@ -21,11 +21,10 @@ let rec closure_rec (closure : Closure.t) : Asml.exp =
   | LetTuple (_type_list, _t1, _t2) -> failwith "Maybe delete in the closure part. There is no LetTuple in the asml file"
   | ExtArray _t -> failwith "Maybe delete in the closure part. Note there is no ExtArray in the asml file"
   | ExtFunApp (name, list_arg) -> Call(name,list_arg)
-  | _ -> Printf.eprintf "Uknown command read in asml generation\n";exit(1)
+  | _ -> (Printf.eprintf "Uknown command read in asml generation\n";exit(1))
 
-and closure_rec_let (closure : Closure.t) : Asml.asmt =
-  match closure with
-  | Let ((id, _), t1, t2) -> LET (id, closure_rec t1, closure_rec_let t2)
+and closure_rec_let (closure:Closure.t):Asml.asmt =match closure with
+  | Let ((id , _) , t1 , t2) -> LET (id, closure_rec t1,closure_rec_let t2)
   | _ -> EXP (closure_rec closure)
 
 let rec creation_function (closure : Closure.all_fun) : Asml.fundef =

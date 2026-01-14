@@ -139,5 +139,5 @@ let f (e : Core.Syntax.t) : Core.Syntax.t =
 
   extenv := Id.M.map default_to_int !extenv;
   ignore (default_to_int (infer Id.M.empty e));
-
-  e
+e
+  

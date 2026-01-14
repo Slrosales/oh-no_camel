@@ -23,8 +23,8 @@ let rec alpha_rec env e =
   | K.Not x -> K.Not (find x env)
   | K.Add (x, y) -> K.Add (find x env, find y env)
   | K.Sub (x, y) -> K.Sub (find x env, find y env)
-  | K.Mul (x, y) -> K.Mul (find x env, find y env)
-  | K.Div (x, y) -> K.Div (find x env, find y env)
+  | K.Mul (x,y) -> K.Mul(find x env, find y env)
+  | K.Div (x,y) -> K.Div(find x env, find y env)
   | K.IfEq (x, y, e1, e2) ->
       K.IfEq (find x env, find y env, alpha_rec env e1, alpha_rec env e2)
   | K.IfLE (x, y, e1, e2) ->
