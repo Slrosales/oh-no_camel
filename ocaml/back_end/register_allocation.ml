@@ -124,6 +124,14 @@ let rec generate_assembly oc = function
 
       emit_asmt oc asmt;
 
+      (* For line after the ouput *)
+      Printf.fprintf oc "\t bl _min_caml_print_newline\n";
+
       (* Epilogue *)
       Printf.fprintf oc "\t sub r13, r11, #4\n";
-      Printf.fprintf oc "\t pop {r11, r14}\n"
+      Printf.fprintf oc "\t pop {r11, r14}\n";
+
+
+      (* Exit Branch *)
+      Printf.fprintf oc "\t bl	_min_caml_exit\n"
+

@@ -17,7 +17,7 @@
 	 ldr r1, [r11, #-20] @ load z
 	 sub r0, r0, r1
 	 sub r13, r11, #4
-	 pop {r11, r15}
+	 pop {r11, r14}
 .text 
 .global _start
 
@@ -35,5 +35,7 @@
 	 str r0, [r11, #-20] @ store result z
 	 ldr r0, [r11, #-20] @ load z
 	 bl _min_caml_print_int
+	 bl _min_caml_print_newline
 	 sub r13, r11, #4
 	 pop {r11, r14}
+	 bl	_min_caml_exit
