@@ -52,16 +52,10 @@ let rec f (e : Syntax.t) : t =
   match e with
   | Syntax.Unit -> Unit
   | Syntax.Bool b -> Int (if b then 1 else 0) (* Syntax.Bool -> KNormal.Int *)
-<<<<<<< HEAD
   | Syntax.Int i -> let id = Id.gentmp Type.Int in
                    Let ((id,Type.Int), Int i, Var id)
                    
    
-=======
-  | Syntax.Int i ->
-      let id = Id.gentmp Type.Int in
-      Let ((id, Type.Int), Int i, Var id)
->>>>>>> 7e9e9cfc76ff5eb34f879dc01706a0dfc4816014
   | Syntax.Var x -> Var x
   | Syntax.Not e -> insert_let (f e) (fun x -> Not x)
   | Syntax.Neg e -> insert_let (f e) (fun x -> Neg x)
@@ -187,13 +181,8 @@ let rec to_string = function
   | Neg x -> Printf.sprintf "-(%s)" x
   | Add (x, y) -> Printf.sprintf "%s + %s" x y
   | Sub (x, y) -> Printf.sprintf "%s - %s" x y
-<<<<<<< HEAD
-  | Mul (x,y) ->Printf.sprintf "%s * %s" x y
-  | Div (x,y) ->Printf.sprintf "%s / %s" x y
-=======
   | Mul (x, y) -> Printf.sprintf "%s * %s" x y
   | Div (x, y) -> Printf.sprintf "%s / %s" x y
->>>>>>> 7e9e9cfc76ff5eb34f879dc01706a0dfc4816014
   | Var x -> x
   | IfEq (x, y, e1, e2) ->
       Printf.sprintf "if %s = %s then\n  %s\nelse\n  %s" x y (to_string e1)
