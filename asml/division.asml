@@ -1,0 +1,5 @@
+let _ =
+  let a = 10 in
+  let b = 3 in
+  let result = div a b in
+  call _min_caml_print_int result
