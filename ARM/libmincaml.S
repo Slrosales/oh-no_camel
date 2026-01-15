@@ -143,36 +143,57 @@ _min_caml_print_int:
 
 
 
-
-@ =================================================================
-@ SOURCE: _min_caml_create_array
-@ =================================================================
-_min_caml_create_array:
-    @ Input:  r0 = size (number of elements to allocate)
-    @ Output: r0 = starting address of the new array
-    
-    ldr r1, =hp_ptr          @ Load address of our 'Heap Pointer' variable
-    ldr r2, [r1]             @ r2 = current 'top' of the heap memory
-    mov r3, r2               @ Save this current address to return in r0
-    
-    @ ASML uses 32-bit integers, so we multiply elements by 4 bytes
-    lsl r0, r0, #2           @ r0 = r0 * 4
-    
-    add r2, r2, r0           @ Move the heap pointer forward by 'size' bytes
-    str r2, [r1]             @ Store the new 'top' back into hp_ptr variable
-    
-    mov r0, r3               @ Return the original address (start of array)
-    bx  lr                   @ Return to caller
-
-@ =================================================================
-@ DATA & MEMORY RESERVATION
-@ =================================================================
 .data
-.align 2
-hp_ptr: 
-    .word heap_memory        @ Variable holding the address of the next free byte
+    .align 4
+heap_ptr:
+    .word heap_start      @ This variable holds the address of the next free byte
+heap_start:
+    .space 20000          @ Reserve 20,000 bytes (adjust size as needed)
 
-.section .bss
-.align 4
-heap_memory:
-    .space 10240             @ Reserve 10KB of blank space for all your arrays
+
+
+
+.text
+    .globl _min_caml_alloc
+_min_caml_alloc:
+    ldr r1, =heap_ptr     @ Get the address of our pointer variable
+    ldr r2, [r1]          @ Load the actual current heap address into r2
+    mov r3, r2            @ Save the current address (this is what we return)
+    add r2, r2, r0        @ Add the requested bytes to the pointer
+    str r2, [r1]          @ Save the new "bumped" pointer back to memory
+    mov r0, r3            @ Put the original start address in r0 for return
+    bx  lr                @ Return to caller
+    .size _min_caml_alloc, .-_min_caml_alloc
+
+
+
+.globl _min_caml_create_array
+_min_caml_create_array:
+    stmfd sp!, {r4, r5, lr} @ Save registers (r4 and r5 are callee-saved)
+    mov r4, r0              @ Save size (number of elements) in r4
+    mov r5, r1              @ Save the initial value in r5
+    
+    @ Step 1: Convert number of elements to bytes (elements * 4)
+    lsl r0, r4, #2          @ Shift left by 2 is the same as multiplying by 4
+    
+    @ Step 2: Allocate the memory
+    bl _min_caml_alloc      @ Call our allocator; r0 now has the base address
+    
+    @ Step 3: Fill the array with the initial value
+    mov r2, #0              @ i = 0 (loop counter)
+.l_init_loop:
+    cmp r2, r4              @ Check if i == size
+    beq .l_init_done        @ If yes, exit loop
+    
+    @ Use Scaled Register Offset to store the value
+    @ memory[base + (i * 4)] = initial_value
+    str r5, [r0, r2, lsl #2] 
+    
+    add r2, r2, #1          @ i++
+    b .l_init_loop          @ Repeat
+    
+.l_init_done:
+    @ r0 still contains the base address of the array, so we just return
+    ldmfd sp!, {r4, r5, lr} @ Restore registers
+    bx lr                   @ Return
+    .size _min_caml_create_array, .-_min_caml_create_array

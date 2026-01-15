@@ -198,6 +198,37 @@ let rec emit_exp oc = function
       emit_asmt oc asmt2;
       Printf.fprintf oc "%s:\n" step_end;
 
+
+      (* Case: mem(arr + index) *)
+  | A.MemLoad(arr_id, index_id_or_imm) ->
+      (* 1. Load the base address (pointer) *)
+      Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);
+      (* 2. Load the index into r1 *)
+      load_ident oc "r1" index_id_or_imm;
+      (* 3. Perform the scaled load: r0 = memory[r0 + (r1 * 4)] *)
+      Printf.fprintf oc "\t ldr r0, [r0, r1, lsl #2]\n"
+
+  (* Case: mem(arr + index) <- value *)
+  | A.Memstore(arr_id, index_id_or_imm, value_id) ->
+      (* 1. Load the base address of the array into r0 *)
+      Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);
+      (* 2. Load the index into r1 *)
+      load_ident oc "r1" index_id_or_imm;
+      (* 3. Load the value to be stored into r2 *)
+      Printf.fprintf oc "\t ldr r2, [r11, #%d]\n" (get_slot value_id);
+      (* 4. Perform the scaled store: memory[r0 + (r1 * 4)] = r2 *)
+      Printf.fprintf oc "\t str r2, [r0, r1, lsl #2]\n"
+
+  (* Case: new size *)
+  | A.New(size_id_or_imm) ->
+      (* 1. Load the number of elements into r0 *)
+      load_ident oc "r0" size_id_or_imm;
+      (* 2. Convert elements to bytes (elements * 4) *)
+      Printf.fprintf oc "\t lsl r0, r0, #2\n";
+      (* 3. Call your heap allocator *)
+      Printf.fprintf oc "\t bl _min_caml_alloc\n"
+
+
   | _ -> () (*Ignore other types for now to avoid crashes*)
 
 and emit_asmt oc = function
