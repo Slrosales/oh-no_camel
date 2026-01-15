@@ -1,0 +1,9 @@
+let _ =
+    let a = 50 in
+    let b = 2 in
+    let c = 3 in
+    let d = div a b in
+    let e = div d c in
+    let f = 4 in
+    let g = div e f in
+    call _min_caml_print_int g
