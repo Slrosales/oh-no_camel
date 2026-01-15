@@ -24,6 +24,8 @@ let load_ident oc reg = function
   | A.INT i -> Printf.fprintf oc "\t mov %s, #%d\n" reg i
   | A.IDENT id -> Printf.fprintf oc "\t ldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) id
 
+let counter = ref 0
+
 (* 1. Handle the Right-Hand Side of a 'let' or a standalone expression *)
 let rec emit_exp oc = function
   | A.Ident ident -> 
@@ -45,84 +47,36 @@ let rec emit_exp oc = function
       load_ident oc "r1" ident_or_imm;
       Printf.fprintf oc "\tmul r0, r0, r1\n"
 
-  (* | A.Div (id, ident_or_imm) ->
-      Printf.printf "Evaluating DIVISION\n";
-
-      let generating_next_step step =
-          Printf.sprintf "%s" step;
-      in
-
-      let step_subtraction_loop = generating_next_step "subtraction loop" in 
-      let step_end = generating_next_step "end" in
-      let branch_greater_equal = "bge" in
-
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id); (*Loading dividend to r1*)
-      load_ident oc "r1" ident_or_imm; (*Loading divisor to r0*)
-      Printf.fprintf oc "\tmov r2, #0\n"; (*r2 for the result*)
-      
-      (*Keep subtracting until the divisor is greater than the dividend*)
-      Printf.fprintf oc "%s:" step_subtraction_loop;
-      Printf.fprintf oc "\tcmp r1, r0\n";
-      Printf.fprintf oc "\t%s %s\n" branch_greater_equal step_end;
-      Printf.fprintf oc "\tsub r0, r0, r1\n";
-      Printf.fprintf oc "\tadd r2, r2, #1\n"; (*The result is incremented at each loop*)
-      Printf.fprintf oc "\tb %s" step_subtraction_loop;
-
-      (*End block, after the loop is terminated*)
-      Printf.fprintf oc "%s:\n" step_end *)
-
-
-   (* CREATE an array *)
-  | A.New ident_or_imm ->
-    load_ident oc "r0" ident_or_imm;     
-    Printf.fprintf oc "\t lsl r0, r0, #2\n";    
-    Printf.fprintf oc "\t bl _min_caml_alloc\n"; 
-
-    
-    (* GET from array *)
-  | A.MemLoad (arr_id, offset_ident) ->
-    Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);
-    load_ident oc "r1" offset_ident;                    
-    Printf.fprintf oc "\t ldr r0, [r0, r1]\n"
-
-  (* PUT to array *)
-  | A.Memstore (arr_id, offset_ident, val_id) ->
-    Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);  
-    load_ident oc "r1" offset_ident;     
-    Printf.fprintf oc "\t ldr r2, [r11, #%d]\n" (get_slot val_id);  
-    Printf.fprintf oc "\t str r2, [r0, r1]\n"  
-
-
   | A.Div (id, ident_or_imm) ->
         Printf.printf "Evaluating DIVISION\n";
 
+        let generating_next_step step =
+          let current_count = !counter in
+          counter := !counter + 1; 
+          Printf.sprintf "%s_%d" step current_count
+        in
 
-        let step_subtraction_loop = "subtraction_loop" in 
-        let step_end = "subtraction_end" in
+        let step_subtraction_loop = generating_next_step "subtraction_loop" in 
+        let step_end = generating_next_step "subtraction_end" in
 
 
         Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot id); 
         load_ident oc "r1" ident_or_imm; 
         Printf.fprintf oc "\t mov r2, #0\n"; 
 
-
         Printf.fprintf oc "%s:\n" step_subtraction_loop;
-        
-   
         Printf.fprintf oc "\t cmp r0, r1\n";
         Printf.fprintf oc "\t blt %s\n" step_end; (* Branch if Less Than to end *)
-        
         Printf.fprintf oc "\t sub r0, r0, r1\n";
         Printf.fprintf oc "\t add r2, r2, #1\n";
         
         (* Jump back to loop *)
         Printf.fprintf oc "\t b %s\n" step_subtraction_loop;
 
-        (* End block and STORE result *)
+        (* LESS THAN End block and STORE result *)
         Printf.fprintf oc "%s:\n" step_end;
         Printf.fprintf oc "\t str r2, [r11, #%d]\n" (get_slot id);
-        Printf.fprintf oc "\t mov r0, r2\n";                     
-
+        Printf.fprintf oc "\t mov r0, r2\n"     
 
   | A.FAdd (id1, id2) ->
       Printf.printf "Evaluating FLOAT-ADDITION\n";
