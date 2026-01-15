@@ -5,11 +5,11 @@
 	 push {r11, r14}
 	 add r11, r13, #4
 	 sub r13, r13, #1024
-	 mov r0, #50
+	 mov r0, #1000
 	 str r0, [r11, #-12] @ store result a
 	 mov r0, #2
 	 str r0, [r11, #-16] @ store result b
-	 mov r0, #3
+	 mov r0, #15
 	 str r0, [r11, #-20] @ store result c
 	 ldr r0, [r11, #-12]
 	 ldr r1, [r11, #-16] @ load b
@@ -37,8 +37,10 @@ subtraction_end_3:
 	 str r2, [r11, #-24]
 	 mov r0, r2
 	 str r0, [r11, #-28] @ store result e
-	 mov r0, #4
+	 mov r0, #2
 	 str r0, [r11, #-32] @ store result f
+	 mov r0, #4
+	 str r0, [r11, #-36] @ store result g
 	 ldr r0, [r11, #-28]
 	 ldr r1, [r11, #-32] @ load f
 	 mov r2, #0
@@ -51,8 +53,21 @@ subtraction_loop_4:
 subtraction_end_5:
 	 str r2, [r11, #-28]
 	 mov r0, r2
-	 str r0, [r11, #-36] @ store result g
-	 ldr r0, [r11, #-36] @ load g
+	 str r0, [r11, #-40] @ store result h
+	 ldr r0, [r11, #-40]
+	 ldr r1, [r11, #-36] @ load g
+	 mov r2, #0
+subtraction_loop_6:
+	 cmp r0, r1
+	 blt subtraction_end_7
+	 sub r0, r0, r1
+	 add r2, r2, #1
+	 b subtraction_loop_6
+subtraction_end_7:
+	 str r2, [r11, #-40]
+	 mov r0, r2
+	 str r0, [r11, #-44] @ store result i
+	 ldr r0, [r11, #-44] @ load i
 	 bl _min_caml_print_int
 	 sub r13, r11, #4
 	 pop {r11, r14}
