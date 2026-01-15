@@ -1,4 +1,0 @@
-let _ =
-    let a = 1.0 in
-    let b = call _min_caml_int_of_float in
-    call _min_caml_print_int b

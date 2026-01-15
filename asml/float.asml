@@ -6,5 +6,4 @@ let _ =
     let r1 = mem(addr1 + 0) in
     let r2 = mem(addr2 + 0) in
     let r3 = fadd r1 r2 in
-    let r4 = call _min_caml_int_of_float r3 in
-    call _min_caml_print_int r4
+    call _min_caml_print_float r3

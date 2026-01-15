@@ -1,10 +1,10 @@
 let _ =
     let x = 1 in
-    let y = 2 in
+    let y = 1 in
     if x = y then (
-        let z = add x x in
+        let z = 3 in
         call _min_caml_print_int z
     ) else (
-        let z = add y y in
-        call _min_caml_print_int z
+        let w = 4 in
+        call _min_caml_print_int w
     )

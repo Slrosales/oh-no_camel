@@ -78,24 +78,6 @@ let rec emit_exp oc = function
         Printf.fprintf oc "\t str r2, [r11, #%d]\n" (get_slot id);
         Printf.fprintf oc "\t mov r0, r2\n"     
 
-  | A.FAdd (id1, id2) ->
-      Printf.printf "Evaluating FLOAT-ADDITION\n";
-      Printf.fprintf oc "tldr r0, [r11, #%d]\n" (get_slot id1);
-      Printf.fprintf oc "tldr r1, [r11, #%d]\n" (get_slot id2);
-      Printf.fprintf oc "\tfadd r0, r0, r1\n"
-
-  | A.FSub (id1, id2) ->
-      Printf.printf "Evaluating FLOAT-SUBSTRUCTION\n";
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id1);
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id2);
-      Printf.fprintf oc "\tfsub r0, r0, r1\n"
-
-  | A.FMul (id1, id2) ->
-      Printf.printf "Evaluating FLOAT-MULTIPLICATION\n";
-      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id1);
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id2);
-      Printf.fprintf oc "\tfmul r0, r0, r1\n"
-
   | A.Neg id ->
       Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
       Printf.fprintf oc "\trsb r0, r1, #0\n"
@@ -110,7 +92,7 @@ let rec emit_exp oc = function
   | A.IfEQ (id, ident, asmt1, asmt2) ->
       Printf.printf "Evaluating IF-EQUAL statement\n"; (*For debugging*)
       let branch_equal = "beq" in
-      let branch = branch_equal in
+      let branch_not_equal = "bne" in
 
       (*in order to distinguish an if statement for nested conditions by adding a count at the end of label*)
       let counter = ref 0 in (*ref allows storing and updating a value*)
@@ -124,18 +106,21 @@ let rec emit_exp oc = function
       let step_else = generating_next_step "else" in (*label to jump to the else block*)
       let step_end = generating_next_step "end" in (*label to jump to end block*)
 
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
       load_ident oc "r1" ident;
       Printf.fprintf oc "\tcmp r0, r1\n";
+      Printf.fprintf oc "\t%s %s\n" branch_equal step_then;
+      Printf.fprintf oc "\t%s %s\n" branch_not_equal step_else;
 
       Printf.printf "Evaluating THEN block\n";
-      Printf.fprintf oc "\t%s %s\n" branch step_then;
+      Printf.fprintf oc "%s:\n" step_then;
       emit_asmt oc asmt1; (*Processing assembly instructions if the condition is correct*)
-      Printf.fprintf oc "\tb %s" step_end;
+      Printf.fprintf oc "\tb %s\n" step_end;
 
-      Printf.printf "Evaluating ELSE blok\n";
-      Printf.fprintf oc "\t%s %s\n" branch step_else;
-      emit_asmt oc asmt2; (*Processing assembly instructions if the condition is incorrect*)
+      (* Printf.fprintf oc "\t%s %s\n" branch_equal step_else; *)
+      Printf.printf "Evaluating ELSE block\n";
+      Printf.fprintf oc "%s:\n" step_else;
+      emit_asmt oc asmt2 ; (*Processing assembly instructions if the condition is incorrect*)
       Printf.fprintf oc "%s:\n" step_end;
 
   | A.IfLE (id, ident, asmt1, asmt2) ->
