@@ -95,7 +95,7 @@ let rec emit_exp oc = function
       let branch_not_equal = "bne" in
 
       (*in order to distinguish an if statement for nested conditions by adding a count at the end of label*)
-      let counter = ref 0 in (*ref allows storing and updating a value*)
+      (* let counter = ref 0 in ref allows storing and updating a value *)
       let generating_next_step step = 
         let current_count = !counter in
         counter := !counter + 1;
@@ -126,9 +126,7 @@ let rec emit_exp oc = function
   | A.IfLE (id, ident, asmt1, asmt2) ->
       Printf.printf "Evaluating IF-LESS-THAN-EQUAL statement\n";
       let branch_less_equal = "ble" in
-      let branch = branch_less_equal in
 
-      let counter = ref 0 in
       let generating_next_step step =
         let current_count = !counter in
         counter := !counter + 1;
@@ -139,26 +137,26 @@ let rec emit_exp oc = function
       let step_else = generating_next_step "else" in
       let step_end = generating_next_step "end" in
 
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
       load_ident oc "r1" ident;
-      Printf.fprintf oc "\tcomp r0, r1\n";
+      Printf.fprintf oc "\tcmp r0, r1\n";
+      Printf.fprintf oc "\t%s %s\n" branch_less_equal step_then;
+      Printf.fprintf oc "\tb %s\n" step_else;
 
       Printf.printf "Evaluating THEN block\n";
-      Printf.fprintf oc "\t%s %s\n" branch step_then;
+      Printf.fprintf oc "%s:\n" step_then;
       emit_asmt oc asmt1;
-      Printf.fprintf oc "\tb %s" step_end;
+      Printf.fprintf oc "\tb %s\n" step_end;
 
       Printf.printf "Evaluating ELSE block\n";
-      Printf.fprintf oc "\t%s %s\n" branch step_else;
+      Printf.fprintf oc "%s:\n" step_else;
       emit_asmt oc asmt2;
       Printf.fprintf oc "%s:\n" step_end;
 
   | A.IfGE (id, ident, asmt1, asmt2) ->
       Printf.printf "Evaluating IF-GREATER-THAN-EQUAL statement\n";
       let branch_greater_equal = "bge" in
-      let branch = branch_greater_equal in
 
-      let counter = ref 0 in
       let generating_next_step step =
         let current_count = !counter in
         counter := !counter + 1;
@@ -169,20 +167,21 @@ let rec emit_exp oc = function
       let step_else = generating_next_step "else" in
       let step_end = generating_next_step "end" in
 
-      Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
+      Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot id);
       load_ident oc "r1" ident;
       Printf.fprintf oc "\tcmp r0, r1\n";
+      Printf.fprintf oc "\t%s %s\n" branch_greater_equal step_then;
+      Printf.fprintf oc "\tb %s\n" step_else;
 
       Printf.printf "Evaluating THEN block\n";
-      Printf.fprintf oc "\t%s %s\n" branch step_then;
+      Printf.fprintf oc "%s:\n" step_then;
       emit_asmt oc asmt1;
       Printf.fprintf oc "\tb %s\n" step_end;
 
       Printf.printf "Evaluating ELSE block\n";
-      Printf.fprintf oc "\t%s %s\n" branch step_else;
+      Printf.fprintf oc "%s:\n" step_else;
       emit_asmt oc asmt2;
       Printf.fprintf oc "%s:\n" step_end;
-
 
       (* Case: mem(arr + index) *)
   | A.MemLoad(arr_id, index_id_or_imm) ->
