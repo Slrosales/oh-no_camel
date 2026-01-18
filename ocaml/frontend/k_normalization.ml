@@ -52,9 +52,10 @@ let rec f (e : Syntax.t) : t =
   match e with
   | Syntax.Unit -> Unit
   | Syntax.Bool b -> Int (if b then 1 else 0) (* Syntax.Bool -> KNormal.Int *)
-  | Syntax.Int i ->
-      let id = Id.gentmp Type.Int in
-      Let ((id, Type.Int), Int i, Var id)
+  | Syntax.Int i -> let id = Id.gentmp Type.Int in
+                   Let ((id,Type.Int), Int i, Var id)
+                   
+   
   | Syntax.Var x -> Var x
   | Syntax.Not e -> insert_let (f e) (fun x -> Not x)
   | Syntax.Neg e -> insert_let (f e) (fun x -> Neg x)
@@ -62,11 +63,11 @@ let rec f (e : Syntax.t) : t =
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Add (x, y)))
   | Syntax.Sub (e1, e2) ->
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Sub (x, y)))
-  (* 'if e1 then e2 else e3', we check what e1 is *)
   | Syntax.Mul (e1, e2) ->
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Mul (x, y)))
   | Syntax.Div (e1, e2) ->
       insert_let (f e1) (fun x -> insert_let (f e2) (fun y -> Div (x, y)))
+  (* 'if e1 then e2 else e3', we check what e1 is *)
   | Syntax.If (e1, e2, e3) -> (
       match e1 with
       | Syntax.Not e -> f (Syntax.If (e, e3, e2))

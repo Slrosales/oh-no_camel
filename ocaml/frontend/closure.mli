@@ -10,6 +10,8 @@ type t =
   | Neg of Id.t
   | Add of Id.t * ident
   | Sub of Id.t * ident
+  | Mul of Id.t * ident
+  | Div of Id.t * ident
   | IfEq of Id.t * ident * t * t
   | IfLE of Id.t * ident * t * t
   | Let of (Id.t * Type.t) * t * t
@@ -22,7 +24,7 @@ type t =
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
 
-type fundef = { name : Id.t; args : Id.t list; body : t }
+and fundef = { name : Id.t; args : Id.t list; body : t }
 (*rename label by adding _ in front for exemple function f become '_f' *)
 
 type all_fun = Fun of fundef * all_fun | Main of t
