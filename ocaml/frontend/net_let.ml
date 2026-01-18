@@ -1,6 +1,6 @@
 module Id = Core.Id
 module Type = Core.Type
-module Knorm = K_normalization (* Helper alias *)
+module Knorm = K_normalization 
 
 type ident = INT of int | IDENT of Id.t
 
