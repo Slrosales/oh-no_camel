@@ -90,7 +90,7 @@ asmt_to_string (asmt:asmt):string = match asmt with
 let rec fundef_string (fundef:fundef):string = match fundef with
 | Main asmt -> "let _ =\n" ^ asmt_to_string asmt
 | Letfloat (letfloat , fundef) -> "let " ^ letfloat.name ^ " = " ^ (string_of_float letfloat.float_let) ^ "\n" ^ (fundef_string fundef)
-| Function  (letfun ,fundef) -> "let " ^letfun.name ^" "^(print_list_args letfun.args)^" =(\n"^asmt_to_string letfun.body ^"\n)\n" ^ fundef_string fundef
+| Function  (letfun ,fundef) -> "let " ^letfun.name ^" "^(print_list_args letfun.args)^" =\n"^asmt_to_string letfun.body ^"\n\n" ^ fundef_string fundef
 let to_string (toplevel:toplevel):string = fundef_string toplevel
 
 
