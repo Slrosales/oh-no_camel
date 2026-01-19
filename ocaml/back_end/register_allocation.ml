@@ -230,22 +230,22 @@ and emit_asmt oc = function
 let rec generate_assembly oc = function
   | A.Function (func, next_inst) ->
       reset_stack ();
-      Printf.fprintf oc ".text\n %s\n\n %s:\n" func.name func.name;
+      Printf.fprintf oc ".text\n.global %s\n\n %s:\n" func.name func.name;
     
       Printf.fprintf oc "\t push {r11, r14}\n";
-      Printf.fprintf oc "\t add r11, r13, #4\n";
-      Printf.fprintf oc "\t sub r13, r13, #1024 @ reqserve frame\n";
+      Printf.fprintf oc "\t mov r11, r13\n";
+      Printf.fprintf oc "\t sub r13, r13, #16 @ reqserve frame\n";
 
       List.iteri (fun i param_id ->
         if i < 4 then
           let offset = get_slot param_id in
-          Printf.fprintf oc "\t str r%d, [r11, #%d] @ save param %s \n" i offset param_id
+          Printf.fprintf oc "\t str r%d, [r11, #%d] @ save %s \n" i offset param_id
       ) func.args;
 
       emit_asmt oc func.body;      
 
-      Printf.fprintf oc "\t sub r13, r11, #4\n";
-      Printf.fprintf oc "\t pop {r11, r14}\n";
+      Printf.fprintf oc "\t add r13, r13, #16\n";
+      Printf.fprintf oc "\t pop {r11, r15}\n";
       
       generate_assembly oc next_inst
 
