@@ -18,7 +18,6 @@ let parse_only = ref false
 let output_asml = ref false
 let output_asml_file = ref None
 let asml_only = ref false
-
 let asml_input_mode = ref false
 
 let print_ast l =
@@ -37,63 +36,73 @@ let file f =
   let oc = open_out arm_name in
 
   try
-    let asml = 
-    match !asml_input_mode with
-    | false -> (
-    (* 1. Parsing *)
-    let file_script = Parser.exp Lexer.token (Lexing.from_channel inchan) in
-    if !verbose then (
-      print_endline "--- AST ---";
-      print_ast file_script);
+    let asml =
+      match !asml_input_mode with
+      | false ->
+          (* 1. Parsing *)
+          let file_script =
+            Parser.exp Lexer.token (Lexing.from_channel inchan)
+          in
+          if !verbose then (
+            print_endline "--- AST ---";
+            print_ast file_script);
 
-    if !parse_only then exit 0;
+          if !parse_only then exit 0;
 
-    (* 1.5 Type Checking *)
-    let typed_script =
-      try Typechecking.f file_script
-      with Typechecking.Type_Error (e, t_expected, t_actual) ->
-        Printf.eprintf "\n[Type Error]\n";
-        Printf.eprintf "  Expected: %s\n" (Type.to_string t_expected);
-        Printf.eprintf "  Actual:   %s\n" (Type.to_string t_actual);
-        exit 1
+          (* 1.5 Type Checking *)
+          let typed_script =
+            try Typechecking.f file_script 
+            with Typechecking.Type_Error (e, t1, t2) ->
+              Printf.eprintf "\n[Type Error]\n";
+              Printf.eprintf "  Mismatch between: %s\n" (Type.to_string t1);
+              Printf.eprintf "               and: %s\n" (Type.to_string t2);
+              exit 1
+          in
+
+          if !type_check_only then exit 0;
+          Printf.printf "Ending: Type Checking\n\n";
+
+          (* 2. K-Normalization *)
+          Printf.printf "Starting: K-Norm\n";
+          let output_k = K_normalization.f typed_script in
+          if !verbose then (
+            print_endline "\n--- K-Norm ---";
+            print_knorm output_k);
+
+          (* 3. Alpha Conversion *)
+          Printf.printf "Starting: Alpha conversion\n";
+          let output_alpha = Alpha_conversion.alpha output_k in
+          if !verbose then (
+            print_endline "--- Alpha ---";
+            print_knorm output_alpha);
+          Printf.printf "Ending: Alpha conversion\n\n";
+
+          (*reduction of nested-let*)
+          Printf.printf "Starting: Nested-let\n";
+          let nested_expression = Net_let.net_let output_alpha in
+          if !verbose then (
+            print_endline "--- Let-Net ---";
+            print_endline (Net_let.to_string nested_expression));
+          Printf.printf "Ending: Nested-let\n\n";
+
+          (*closure conversion*)
+          Printf.printf "Starting: Closure\n";
+          let closure_expression = Closure.closure nested_expression in
+          if !verbose then (
+            print_endline "--- Closure ---";
+            print_endline (Closure.to_string closure_expression));
+          Printf.printf "Ending: Closure\n\n";
+
+          (*ASML generation*)
+          Printf.printf "Starting: ASML\n";
+          Asml_generation.asml_generator closure_expression
+      | true ->
+          Parser_asml.toplevel Lexer_asml.token (Lexing.from_channel inchan)
     in
-
-    if !type_check_only then exit 0;
-    Printf.printf "Ending: Type Checking\n\n";
-
-    (* 2. K-Normalization *)
-    Printf.printf "Starting: K-Norm\n";
-    let output_k = K_normalization.f typed_script in
-    if !verbose then (
-      print_endline "\n--- K-Norm ---";
-      print_knorm output_k);
-
-    (* 3. Alpha Conversion *)
-    Printf.printf "Starting: Alpha conversion\n";
-    let output_alpha = Alpha_conversion.alpha output_k in
-      if !verbose then (print_endline "--- Alpha ---"; print_knorm output_alpha);
-    Printf.printf "Ending: Alpha conversion\n\n";
-
-    (*reduction of nested-let*)
-    Printf.printf "Starting: Nested-let\n";
-    let nested_expression = Net_let.net_let output_alpha in
-    if !verbose then (print_endline "--- Let-Net ---"; print_endline (Net_let.to_string nested_expression));
-    Printf.printf "Ending: Nested-let\n\n";
-
-    (*closure conversion*)
-    Printf.printf "Starting: Closure\n";
-    let closure_expression = Closure.closure nested_expression in
-    if !verbose then (print_endline "--- Closure ---"; print_endline (Closure.to_string closure_expression));
-    Printf.printf "Ending: Closure\n\n";
-
-    (*ASML generation*)
-    Printf.printf "Starting: ASML\n";
-    Asml_generation.asml_generator closure_expression)
-    | true -> (Parser_asml.toplevel Lexer_asml.token (Lexing.from_channel inchan)) in
-    if !parse_only then (print_endline "\n--- ASML ---";
-                        print_endline (Asml.to_string asml);
-                        exit(0);
-      );
+    if !parse_only then (
+      print_endline "\n--- ASML ---";
+      print_endline (Asml.to_string asml);
+      exit 0);
     if !verbose then (
       print_endline "\n--- ASML ---";
       print_endline (Asml.to_string asml));
@@ -101,8 +110,7 @@ let file f =
       if !verbose then print_endline "\n--- WRITING ASML FILE ---";
       match !output_asml_file with
       | None -> Asml.write_file asml
-      | Some s -> Asml.write_file ~output_file:s asml
-      );
+      | Some s -> Asml.write_file ~output_file:s asml);
     Printf.printf "Ending: ASML\n\n";
 
     Register_allocation.generate_assembly oc asml;
@@ -141,7 +149,9 @@ let () =
       ("-verbose", Arg.Set verbose, "Activate verbose");
       ("-type_only", Arg.Set type_check_only, "Only execute up to type checking");
       ("-parsing_only", Arg.Set parse_only, "Only execute up to parsing");
-      ("-asml_input_mode",Arg.Set asml_input_mode,"Read asml file from the input file you enter");
+      ( "-asml_input_mode",
+        Arg.Set asml_input_mode,
+        "Read asml file from the input file you enter" );
       ("-asml", Arg.Set output_asml, "Produce asml_output_file");
       ( "-asml_output",
         Arg.String (fun s -> output_asml_file := Some s),
@@ -149,8 +159,9 @@ let () =
     ]
     (fun s -> files := !files @ [ s ])
     (Printf.sprintf
-       "usage: %s [-h/-help] [-v] [-verbose] [-type_only] [-parsing_only] [-asml_input_mode] [-asml] \
-        [-asml_output output_asml_file] [-o output_file] filenames"
+       "usage: %s [-h/-help] [-v] [-verbose] [-type_only] [-parsing_only] \
+        [-asml_input_mode] [-asml] [-asml_output output_asml_file] [-o \
+        output_file] filenames"
        Sys.argv.(0));
 
   List.iter (fun f -> ignore (file f)) !files
