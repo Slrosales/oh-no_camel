@@ -3,6 +3,9 @@ module Asml = Core.Asml
 let convert_ident (closure : Closure.ident) : Asml.ident_or_imm =
   match closure with INT i -> Asml.INT i | IDENT id -> Asml.IDENT id
 
+let remove_type elem = match elem with
+| (name,_) -> name 
+
 let rec closure_rec (closure : Closure.t) : Asml.exp =
   match closure with
   | Unit -> NOP
@@ -21,17 +24,20 @@ let rec closure_rec (closure : Closure.t) : Asml.exp =
   | LetTuple (_type_list, _t1, _t2) -> failwith "Maybe delete in the closure part. There is no LetTuple in the asml file"
   | ExtArray _t -> failwith "Maybe delete in the closure part. Note there is no ExtArray in the asml file"
   | ExtFunApp (name, list_arg) -> Call(name,list_arg)
+  | New id -> New (convert_ident(id))
+  | AppClo (t,t_list) -> Callclo (t,t_list) 
   | _ -> (Printf.eprintf "Uknown command read in asml generation\n";exit(1))
 
 and closure_rec_let (closure:Closure.t):Asml.asmt =match closure with
-  | Let ((id , _) , t1 , t2) -> LET (id, closure_rec t1,closure_rec_let t2)
+  | Let ((id,_) , t1 , t2) -> LET (id, closure_rec t1,closure_rec_let t2)
   | _ -> EXP (closure_rec closure)
 
 let rec creation_function (closure : Closure.all_fun) : Asml.fundef =
   match closure with
   | Fun (fundef, b) ->
-      let name = fundef.name in
-      let args = fundef.args in
+      let tmp_name,_= fundef.name in
+      let name = "_"^tmp_name in
+      let args =List.map remove_type fundef.args in
       let body = closure_rec_let fundef.body in
       let newfundef : Asml.letfun = { name; args; body } in
       Function (newfundef, creation_function b)
