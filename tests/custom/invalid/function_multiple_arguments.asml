@@ -1,0 +1,16 @@
+let _sum_of_5_arguments a b c d e f =
+    let sum1 = add a b in
+    let sum2 = add sum1 c in
+    let sum3 = add sum2 d in
+    let sum4 = add sum3 e in
+    add sum4 f
+
+let _ =
+    let aa = 1 in
+    let bb = 2 in
+    let cc = 3 in
+    let dd = 4 in
+    let ee = 5 in
+    let ff = 6 in
+    let sum = call _sum_of_5_arguments aa bb cc dd ee ff in
+    call _min_caml_print_int sum
