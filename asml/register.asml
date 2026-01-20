@@ -1,0 +1,13 @@
+let _average4 x y z w =
+  let sum1 = add x y in
+  let sum2 = add z w in
+  let total = add sum1 sum2 in
+  total
+
+let _ =
+  let a = 100 in
+  let b = 200 in
+  let c = 300 in
+  let d = 400 in
+  let result = call _average4 a b c d in
+  call _min_caml_print_int result

@@ -1,0 +1,31 @@
+(* Goal: 
+   - r0, r1, r2, r3 are filled by parameters a, b, c, d
+   - r4, r5, r6, r7, r8 are forced by v1, v2, v3, v4, v5
+   - Total of 9 values held at once before the final addition.
+*)
+
+let _all_regs_test a b c d =
+  let v1 = 100 in         (* Target: r4 *)
+  let v2 = 200 in         (* Target: r5 *)
+  let v3 = 300 in         (* Target: r6 *)
+  let v4 = 400 in         (* Target: r7 *)
+  let v5 = 500 in         (* Target: r8 *)
+  
+
+  let sum1 = add a v1 in  (* uses r0 and r4 *)
+  let sum2 = add b v2 in  (* uses r1 and r5 *)
+  let sum3 = add c v3 in  (* uses r2 and r6 *)
+  let sum4 = add d v4 in  (* uses r3 and r7 *)
+  
+  let tmp1 = add sum1 sum2 in
+  let tmp2 = add sum3 sum4 in
+  let tmp3 = add tmp1 tmp2 in
+  add tmp3 v5             (* Result in r0 *)
+
+let _ =
+  let p1 = 1 in
+  let p2 = 2 in
+  let p3 = 3 in
+  let p4 = 4 in
+  let final = call _all_regs_test p1 p2 p3 p4 in
+  call _min_caml_print_int final

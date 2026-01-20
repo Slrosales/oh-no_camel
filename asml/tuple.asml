@@ -1,0 +1,9 @@
+let _ =
+  let t = new 2 in
+  let val1 = 95 in
+  let val2 = 100 in
+  let _s1 = mem(t 0) <- val1 in
+  let _s2 = mem(t 1) <- val2 in
+  let res = mem(t 0) in
+  let d = call _min_caml_print_int res in
+  call _min_caml_print_newline
