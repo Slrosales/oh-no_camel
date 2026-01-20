@@ -1,0 +1,5 @@
+let _ =
+    let x = 1.0 in
+    let y = 2.0 in
+    let z = add x y in
+    call _min_caml_print_int z

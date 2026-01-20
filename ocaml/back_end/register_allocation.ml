@@ -75,8 +75,42 @@ let rec emit_exp oc = function
 
         (* LESS THAN End block and STORE result *)
         Printf.fprintf oc "%s:\n" step_end;
+<<<<<<< HEAD
         Printf.fprintf oc "\tstr r2, [r11, #%d]\n" (get_slot id);
         Printf.fprintf oc "\tmov r0, r2\n"     
+=======
+        Printf.fprintf oc "\t str r2, [r11, #%d]\n" (get_slot id);
+        Printf.fprintf oc "\t mov r0, r2\n"     
+
+| A.FAdd (id1, id2) ->
+      Printf.printf "Evaluating FLOAT-ADDITION\n";
+      (* Use load_val to handle both registers and stack (r13) *)
+      load_val oc "r0" (A.IDENT id1);
+      load_val oc "r1" (A.IDENT id2);
+      (* Bridge to Floating Point Unit *)
+      Printf.fprintf oc "\t vmov s0, r0\n";
+      Printf.fprintf oc "\t vmov s1, r1\n";
+      Printf.fprintf oc "\t vadd.f32 s2, s0, s1\n";
+      Printf.fprintf oc "\t vmov %s, s2\n" dest_reg
+
+  | A.FSub (id1, id2) ->
+      Printf.printf "Evaluating FLOAT-SUBSTRUCTION\n";
+      load_val oc "r0" (A.IDENT id1);
+      load_val oc "r1" (A.IDENT id2);
+      Printf.fprintf oc "\t vmov s0, r0\n";
+      Printf.fprintf oc "\t vmov s1, r1\n";
+      Printf.fprintf oc "\t vsub.f32 s2, s0, s1\n";
+      Printf.fprintf oc "\t vmov %s, s2\n" dest_reg
+
+  | A.FMul (id1, id2) ->
+      Printf.printf "Evaluating FLOAT-MULTIPLICATION\n";
+      load_val oc "r0" (A.IDENT id1);
+      load_val oc "r1" (A.IDENT id2);
+      Printf.fprintf oc "\t vmov s0, r0\n";
+      Printf.fprintf oc "\t vmov s1, r1\n";
+      Printf.fprintf oc "\t vmul.f32 s2, s0, s1\n";
+      Printf.fprintf oc "\t vmov %s, s2\n" dest_reg
+>>>>>>> 84e44254d19b411c24820e394c3ab605f09a2fe9
 
   | A.Neg id ->
       Printf.fprintf oc "\tldr r1, [r11, #%d]\n" (get_slot id);
@@ -219,15 +253,22 @@ let rec emit_exp oc = function
 
       (* Case: mem(arr + index) *)
   | A.MemLoad(arr_id, index_id_or_imm) ->
+<<<<<<< HEAD
       (* 1. Load the base address (pointer) *)
       Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot arr_id);
       (* 2. Load the index into r1 *)
       load_ident oc "r1" index_id_or_imm;
       (* 3. Perform the scaled load: r0 = memory[r0 + (r1 * 4)] *)
       Printf.fprintf oc "\tldr r0, [r0, r1, lsl #2]\n"
+=======
+      Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);
+      load_ident oc "r1" index_id_or_imm;
+      Printf.fprintf oc "\t ldr r0, [r0, r1, lsl #2]\n"
+>>>>>>> 84e44254d19b411c24820e394c3ab605f09a2fe9
 
-  (* Case: mem(arr + index) <- value *)
+
   | A.Memstore(arr_id, index_id_or_imm, value_id) ->
+<<<<<<< HEAD
       (* 1. Load the base address of the array into r0 *)
       Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot arr_id);
       (* 2. Load the index into r1 *)
@@ -236,15 +277,25 @@ let rec emit_exp oc = function
       Printf.fprintf oc "\tldr r2, [r11, #%d]\n" (get_slot value_id);
       (* 4. Perform the scaled store: memory[r0 + (r1 * 4)] = r2 *)
       Printf.fprintf oc "\tstr r2, [r0, r1, lsl #2]\n"
+=======
+      Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" (get_slot arr_id);
+      load_ident oc "r1" index_id_or_imm;
+      Printf.fprintf oc "\t ldr r2, [r11, #%d]\n" (get_slot value_id);
+      Printf.fprintf oc "\t str r2, [r0, r1, lsl #2]\n"
+>>>>>>> 84e44254d19b411c24820e394c3ab605f09a2fe9
 
   (* Case: new size *)
   | A.New(size_id_or_imm) ->
-      (* 1. Load the number of elements into r0 *)
       load_ident oc "r0" size_id_or_imm;
+<<<<<<< HEAD
       (* 2. Convert elements to bytes (elements * 4) *)
       Printf.fprintf oc "\tlsl r0, r0, #2\n";
       (* 3. Call your heap allocator *)
       Printf.fprintf oc "\tbl _min_caml_alloc\n"
+=======
+      Printf.fprintf oc "\t lsl r0, r0, #2\n";
+      Printf.fprintf oc "\t bl _min_caml_alloc\n"
+>>>>>>> 84e44254d19b411c24820e394c3ab605f09a2fe9
 
 
   | _ -> () (*Ignore other types for now to avoid crashes*)
@@ -260,9 +311,10 @@ and emit_asmt oc = function
       Printf.printf "Evaluating EXP\n";
       emit_exp oc exp
 
-
-let rec generate_assembly oc = function
+let rec generate_assembly oc prog =
+  match prog with
   | A.Function (func, next_inst) ->
+<<<<<<< HEAD
       reset_stack ();
       Printf.fprintf oc ".text\n.global %s\n\n%s:\n" func.name func.name;
     
@@ -274,16 +326,43 @@ let rec generate_assembly oc = function
         if i < 4 then
           let offset = get_slot param_id in
           Printf.fprintf oc "\tstr r%d, [r11, #%d] @ save param %s \n" i offset param_id
+=======
+
+      Part_1.allocate_registers func.body func.args;
+      
+      Printf.fprintf oc ".text\n.global %s\n%s:\n" func.name func.name;
+
+      Printf.fprintf oc "\t push {r11, r14}\n";
+      Printf.fprintf oc "\t add r11, r13, #4\n";    (* r11 now points to saved r14 *)
+      Printf.fprintf oc "\t sub r13, r13, #1024\n"; 
+
+
+      List.iteri (fun i param_id ->
+        if i < 4 then
+          match Part_1.get_loc param_id with
+          | Part_1.Stack offset -> 
+              Printf.fprintf oc "\t str r%d, [r11, #%d] @ save param %s\n" i offset param_id
+          | Part_1.Reg r -> 
+              Printf.fprintf oc "\t mov %s, r%d @ move param %s to home reg\n" r i param_id
+>>>>>>> 84e44254d19b411c24820e394c3ab605f09a2fe9
       ) func.args;
 
       emit_asmt oc func.body;      
 
+<<<<<<< HEAD
       Printf.fprintf oc "\tadd r13, r13, #16\n";
       Printf.fprintf oc "\tpop {r11, r15}\n\n";
+=======
+
+      Printf.fprintf oc "\t sub r13, r11, #4\n";
+      Printf.fprintf oc "\t pop {r11, r14}\n";
+      Printf.fprintf oc "\t bx r14\n"; 
+>>>>>>> 84e44254d19b411c24820e394c3ab605f09a2fe9
       
       generate_assembly oc next_inst
 
   | A.Main asmt ->
+<<<<<<< HEAD
       reset_stack ();
       Printf.fprintf oc ".text\n.global _start\n\n _start:\n";
 
@@ -305,3 +384,22 @@ let rec generate_assembly oc = function
       (* Exit Branch *)
       Printf.fprintf oc "\tbl	_min_caml_exit\n"
 
+=======
+      Part_1.allocate_registers asmt [];
+      Printf.fprintf oc ".text \n.global _start\n\n_start:\n";
+
+
+      Printf.fprintf oc "\t push {r11, r14}\n";
+      Printf.fprintf oc "\t add r11, r13, #4\n";
+      Printf.fprintf oc "\t sub r13, r13, #1024\n";
+
+      emit_asmt oc asmt;
+
+
+      Printf.fprintf oc "\t bl _min_caml_print_newline\n";
+      Printf.fprintf oc "\t sub r13, r11, #4\n";
+      Printf.fprintf oc "\t pop {r11, r14}\n";
+      Printf.fprintf oc "\t bl _min_caml_exit\n"
+
+  | A.Nil -> ()
+>>>>>>> 84e44254d19b411c24820e394c3ab605f09a2fe9

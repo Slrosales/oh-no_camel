@@ -1,0 +1,33 @@
+(* Goal: 
+   1. Use r0-r3 for parameters (a, b, c, d)
+   2. Use r4-r8 for intermediate calculations
+   3. Trigger the custom Division loop
+   4. Test Multiplication and Nested If-Else
+*)
+let _complex_calc a b c d =
+  let prod = mul a b in          (* Likely r4 *)
+  let diff = sub c d in          (* Likely r5 *)
+  let threshold = 50 in
+  if prod <= threshold then
+    let v1 = add prod diff in    (* Likely r6 *)
+    let result = div v1 a in     (* Triggers div_loop *)
+    result
+  else
+    let v2 = mul diff b in       (* Likely r7 *)
+    if v2 <= 0 then
+      let res_neg = neg v2 in    (* Likely r8 *)
+      res_neg
+    else
+      let res_pos = div v2 d in
+      res_pos
+
+let _ =
+  let x = 20 in
+  let y = 10 in
+  let z = 100 in
+  let w = 40 in
+  (* x*y = 200, which is > 50. Will go to ELSE block. *)
+  (* z-w = 60. v2 = 60 * 10 = 600. *)
+  (* final = 600 / 40 = 15. *)
+  let final_res = call _complex_calc x y z w in
+  call _min_caml_print_int final_res
