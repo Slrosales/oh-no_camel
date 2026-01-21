@@ -9,9 +9,14 @@ let add_assotiation (string:string)(int:int)(var_assoctiation:(string,int)Hashtb
   | None -> Hashtbl.add var_assoctiation string int
   | Some _ -> ()
 
+let init_var_dependency (string:string)(var_depedency:(string,int)Hashtbl.t):unit =
+   match Hashtbl.find_opt var_depedency string with
+  | None -> Hashtbl.add var_depedency string 0
+  | Some _ ->()
+
 let add_var_dependency (string:string)(var_depedency:(string,int)Hashtbl.t):unit =
   match Hashtbl.find_opt var_depedency string with
-  | None -> Hashtbl.add var_depedency string 0
+  | None -> Hashtbl.add var_depedency string 1
   | Some int ->Hashtbl.remove var_depedency string; Hashtbl.add var_depedency string (int+1) 
 
 let rec init_list(str_list:string list)(var_depedency:(string,int)Hashtbl.t):unit=
@@ -43,7 +48,7 @@ init_optimization_ident ident var_depedency;fonction_optimization_init asmt1 var
 
 and fonction_optimization_init (asmt:Asml.asmt)(var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t)=
   match asmt with
-  | LET(label,Ident (INT i),asmt) -> add_assotiation label i var_assoctiation;add_var_dependency label var_depedency ; fonction_optimization_init asmt var_assoctiation var_depedency
+  | LET(label,Ident (INT i),asmt) -> add_assotiation label i var_assoctiation;init_var_dependency label var_depedency ; fonction_optimization_init asmt var_assoctiation var_depedency
   | LET(_,exp,asmt) -> init_optimization_rec exp var_assoctiation var_depedency;fonction_optimization_init asmt var_assoctiation var_depedency
   | EXP exp -> init_optimization_rec exp var_assoctiation var_depedency 
 
