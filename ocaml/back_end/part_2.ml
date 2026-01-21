@@ -492,25 +492,37 @@ and emit_asmt oc asmt =
       emit_exp oc "r0" e
 
 
+
 let rec generate_assembly oc prog =
   match prog with
 
   | A.Function (func, next_inst) ->
+    
       Part_1.allocate_registers func.body func.args;
       Printf.fprintf oc "\n.global %s\n%s:\n" func.name func.name;
       Printf.fprintf oc "\t push {r4-r10, r11, r14}\n";
       Printf.fprintf oc "\t add r11, r13, #32\n"; 
       Printf.fprintf oc "\t sub r13, r13, #1024\n"; 
 
-      List.iteri (fun i p -> 
-        match Part_1.get_loc p with
+    List.iteri (fun i p -> 
+      let loc = Part_1.get_loc p in
+      if i < 4 then
+        match loc with
         | Part_1.Reg r -> 
-            if i < 4 && r <> ("r"^string_of_int i) then 
-              Printf.fprintf oc "\t mov %s, r%d\n" r i
+            if r <> ("r"^string_of_int i) then Printf.fprintf oc "\t mov %s, r%d\n" r i
         | Part_1.Stack off -> 
-            if i < 4 then 
-              Printf.fprintf oc "\t str r%d, [r11, #%d]\n" i off
-      ) func.args;
+            Printf.fprintf oc "\t str r%d, [r11, #%d]\n" i off
+      else
+        let caller_stack_off = (i - 4) * 4 + 4 in 
+        match loc with
+        | Part_1.Reg r ->
+            Printf.fprintf oc "\t ldr %s, [r11, #%d] @ param %d from caller stack\n" r caller_stack_off i
+        | Part_1.Stack off ->
+            Printf.fprintf oc "\t ldr r0, [r11, #%d]\n" caller_stack_off;
+            Printf.fprintf oc "\t str r0, [r11, #%d]\n" off
+    ) func.args;
+
+
 
       emit_asmt oc func.body;      
       Printf.fprintf oc "\t sub r13, r11, #32\n";
@@ -518,12 +530,17 @@ let rec generate_assembly oc prog =
       generate_assembly oc next_inst
 
   | A.Main asmt ->
+
+      (* Prologue*)
       Part_1.allocate_registers asmt [];
       Printf.fprintf oc "\n.text\n.global _start\n_start:\n";
       Printf.fprintf oc "\t push {r4-r10, r11, r14}\n";
       Printf.fprintf oc "\t add r11, r13, #32\n";
       Printf.fprintf oc "\t sub r13, r13, #1024\n";
+
       emit_asmt oc asmt;
+
+      (* Epilogue *)
       Printf.fprintf oc "\t bl _min_caml_print_newline\n";
       Printf.fprintf oc "\t sub r13, r11, #32\n";
       Printf.fprintf oc "\t pop {r4-r10, r11, r14}\n";
