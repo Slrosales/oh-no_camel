@@ -19,14 +19,13 @@ let reset_stack () =
   Hashtbl.clear stack_map;
   stack_next := -12
 
-(* Helper to load constants or variables into a specific register *)
 let load_ident oc reg = function
   | A.INT i -> Printf.fprintf oc "\tmov %s, #%d\n" reg i
   | A.IDENT id -> Printf.fprintf oc "\tldr %s, [r11, #%d] @ load %s\n" reg (get_slot id) id
 
 let counter = ref 0
 
-(* 1. Handle the Right-Hand Side of a 'let' or a standalone expression *)
+
 let rec emit_exp oc = function
   | A.Ident ident -> 
       load_ident oc "r0" ident
@@ -107,18 +106,10 @@ let rec emit_exp oc = function
             Printf.fprintf oc "\tpush {%s}\n" assigning_register
       ) arguments_list;
 
-      (* let needed_memory_size = !number_of_arguments * 4 in
-
-      Printf.fprintf oc "\tsub sp, sp, #%d\n" needed_memory_size; *)
-
-      (* List.iteri (fun index argument_id ->
-        let storing_register = "r" ^ (string_of_int index) in
-        let offset = (string_of_int)(index * 4) in
-        Printf.fprintf oc "\tstr %s, [sp, #%s]\n" storing_register offset
-      ) arguments_list; *)
+ 
 
       Printf.fprintf oc "\tblx r1\n";
-      (* Printf.fprintf oc "\tadd sp, sp, #%d\n" needed_memory_size; *)
+   
       Printf.fprintf oc "\tpop {lr}\n";
 
       Printf.printf "Ending Closure\n"
@@ -217,36 +208,29 @@ let rec emit_exp oc = function
       emit_asmt oc asmt2;
       Printf.fprintf oc "%s:\n" step_end;
 
-      (* Case: mem(arr + index) *)
+
   | A.MemLoad(arr_id, index_id_or_imm) ->
-      (* 1. Load the base address (pointer) *)
+
       Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot arr_id);
-      (* 2. Load the index into r1 *)
       load_ident oc "r1" index_id_or_imm;
-      (* 3. Perform the scaled load: r0 = memory[r0 + (r1 * 4)] *)
       Printf.fprintf oc "\tldr r0, [r0, r1, lsl #2]\n"
 
 
   | A.Memstore(arr_id, index_id_or_imm, value_id) ->
-      (* 1. Load the base address of the array into r0 *)
+
       Printf.fprintf oc "\tldr r0, [r11, #%d]\n" (get_slot arr_id);
-      (* 2. Load the index into r1 *)
       load_ident oc "r1" index_id_or_imm;
-      (* 3. Load the value to be stored into r2 *)
       Printf.fprintf oc "\tldr r2, [r11, #%d]\n" (get_slot value_id);
-      (* 4. Perform the scaled store: memory[r0 + (r1 * 4)] = r2 *)
       Printf.fprintf oc "\tstr r2, [r0, r1, lsl #2]\n"
 
-  (* Case: new size *)
+
   | A.New(size_id_or_imm) ->
       load_ident oc "r0" size_id_or_imm;
-      (* 2. Convert elements to bytes (elements * 4) *)
       Printf.fprintf oc "\tlsl r0, r0, #2\n";
-      (* 3. Call your heap allocator *)
       Printf.fprintf oc "\tbl _min_caml_alloc\n"
 
 
-  | _ -> () (*Ignore other types for now to avoid crashes*)
+  | _ -> () 
 
 and emit_asmt oc = function
   | A.LET (id, exp, next_asmt) ->

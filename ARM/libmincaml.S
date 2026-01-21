@@ -148,7 +148,7 @@ _min_caml_print_int:
 heap_ptr:
     .word heap_start      @ Adress of next free byte
 heap_start:
-    .space 20000          @ 20k byte heap size
+    .space 20000          @ 20k byte heap size (arbitrary)
 
 
 
