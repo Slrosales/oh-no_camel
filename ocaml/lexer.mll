@@ -27,7 +27,7 @@ rule token = parse
 | digit+ 
     { INT(int_of_string (Lexing.lexeme lexbuf)) }
 | digit+ ('.' digit*)? (['e' 'E'] ['+' '-']? digit+)?
-    { FLOAT(float_of_string (Lexing.lexeme lexbuf)) }
+    { failwith ("Floating numbers are not supported: might result erros " ^ Lexing.lexeme lexbuf ) }
 | '-' 
     { MINUS }
 | '+'
