@@ -131,7 +131,7 @@ let reset_allocation () =
       else
         (* 1024 (buffer) + 36 (pushed regs) = 1060. 
           Arg 5 is at [sp, #1060], Arg 6 at [sp, #1064], etc. *)
-        let extra_offset = 1060 + ((i - 4) * 4) in
+        let extra_offset = (*1060 +*) ((i - 4) * 4 + 4) in
         Hashtbl.replace allocation_map arg (Stack extra_offset)
     ) args ;
 

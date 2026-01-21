@@ -426,9 +426,9 @@ let rec emit_exp oc dest_reg exp =
           ) args;
           List.iteri (fun i arg ->
             if i >= 4 then (
-              load_val oc "r3" (A.IDENT arg);
+              load_val oc "r12" (A.IDENT arg);
               let spill_offset = (i - 4) * 4 in
-              Printf.fprintf oc "\t str r3, [r13, #%d]\n" spill_offset
+              Printf.fprintf oc "\t str r12, [r13, #%d]\n" spill_offset
             )
           ) args;
           Printf.fprintf oc "\t bl %s\n" (Id.to_string func_name);
