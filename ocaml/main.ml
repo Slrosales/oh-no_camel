@@ -18,10 +18,7 @@ let parse_only = ref false
 let output_asml = ref false
 let output_asml_file = ref None
 let asml_only = ref false
-<<<<<<< HEAD
-=======
 let opt = ref 0
->>>>>>> main
 let asml_input_mode = ref false
 
 let print_ast l =
@@ -173,6 +170,6 @@ let () =
        "usage: %s [-h/-help] [-v] [-verbose] [-type_only] [-parsing_only] \
         [-asml_input_mode] [-asml] [-asml_output output_asml_file] [-o \
         output_file] filenames"
-       Sys.argv.(0));
+p       Sys.argv.(0));
 
   List.iter (fun f -> ignore (file f)) !files
