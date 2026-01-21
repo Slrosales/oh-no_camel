@@ -7,8 +7,8 @@ module MapVar= Map.Make(String)
 
 type var_type = Type.t MapString.t
 type closure =  Id.t MapString.t
-type var = (int*Type.t) MapVar.t 
-type env = (var ) MapEnv.t
+type var = int MapVar.t 
+type env = var MapEnv.t
 
 (*
 --------------------------------------------------------------------
@@ -44,16 +44,16 @@ let print_closure (closure:closure)(context:string):unit =
   print_endline ("map : "^(string_closure (MapString.to_list closure))^" context : "^context )
 
 (*------------------------------ var ---------------------------------*)
-let rec string_var_list_rec (var:(string*(int*Type.t))list):string =
+let rec string_var_list_rec (var:(string*int)list):string =
   match var with
   | [] -> "]"
-  | (key,(int,type_i))::[] -> "\t"^key^":"^Type.to_string type_i^" -> "^string_of_int int^"]"
-  | (key,(int,type_i))::tail -> "\t"^key^":"^Type.to_string type_i^" -> "^string_of_int int^"\n"^string_var_list_rec tail
-let string_var_list (var:(string*(int*Type.t))list):string =
+  | (key,(int))::[] -> "\t"^key^" -> "^string_of_int int^"]"
+  | (key,(int))::tail -> "\t"^key^" -> "^string_of_int int^"\n"^string_var_list_rec tail
+let string_var_list (var:(string*int)list):string =
   match var with
   | [] -> "[]"
-  | (key,(int,type_i))::[] -> "[\n\t"^key^":"^Type.to_string type_i^" -> "^string_of_int int^"]"
-  | (key,(int,type_i))::tail -> "[\n\t"^key^":"^Type.to_string type_i^" -> "^string_of_int int^",\n"^string_var_list_rec tail
+  | (key,(int))::[] -> "[\n\t"^key^" -> "^string_of_int int^"]"
+  | (key,(int))::tail -> "[\n\t"^key^" -> "^string_of_int int^",\n"^string_var_list_rec tail
 
 let string_var(var:var):string =
   string_var_list (MapVar.to_list var)
@@ -105,6 +105,11 @@ let add_arg (args:Id.t list)(funct_name:string)(map:closure)=
 let add_element (ident : Id.t) (funct_name:string )(map: closure)=
   MapString.add ident funct_name map 
 
+let rec add_element_list (ident_list: Id.t list) (funct_name:string)(map:closure)=
+  match ident_list with
+  | [] -> map
+  | e::list ->  add_element_list list funct_name (add_element e funct_name map)
+
 let get_data (ident:Id.t)(map : closure):string option=
   MapString.find_opt ident map
 
@@ -115,16 +120,13 @@ let need_closure_bool (ident:Id.t) (context:string)(map : closure) :bool =
    | Some _ -> false
 
    
-let rec list_need_closure (ids:string list)(context:string)(map_type:var_type)(map : closure):((string*Type.t )list) =
+let rec list_need_closure (ids:string list)(context:string)(map_type:var_type)(map : closure):((string )list) =
   match ids with
   | [] -> []
   | e::tail ->
-    let type_e = match get_type map_type e with
-                  | None -> Type.gentyp ()
-                  | Some s -> s
-  in
+
     match need_closure_bool e context map with
-    | true -> (e,type_e)::list_need_closure tail context map_type map 
+    | true -> (e)::list_need_closure tail context map_type map 
     | false -> list_need_closure tail context map_type map
 
 
@@ -138,7 +140,7 @@ let get_key (var:var):string list =
   let list_var = MapVar.to_list var in
   List.map (fun (key,_) -> key) list_var
 
-let get_var ~(id:Id.t) ~(varmap:var): (int*Type.t) option =
+let get_var ~(id:Id.t) ~(varmap:var): int option =
   match MapVar.find_opt id varmap with
   | None -> None
   | Some s -> Some s
@@ -148,22 +150,22 @@ let update_env (label_fun:Id.t)(new_var:var)(env:env):env =
   let new_env = MapEnv.remove label_fun env in
   MapEnv.add label_fun new_var new_env
 
-let add_var_env ~(label_fun:Id.t) ~(ident:(Id.t*Type.t)) ~(env : env):env =
+let add_var_env ~(label_fun:Id.t) ~(ident:Id.t) ~(env : env):env =
   
   match MapEnv.find_opt label_fun env with
   | None -> let new_var_map = MapVar.empty in 
-            let ident_var,type_ident = ident in
-            let var_map = MapVar.add ident_var (4,type_ident) new_var_map in
+            let ident_var = ident in
+            let var_map = MapVar.add ident_var (4) new_var_map in
             MapEnv.add label_fun var_map env
-  | Some s -> (let ident_var,_ = ident in
+  | Some s -> (let ident_var = ident in
     match var_in ident_var s with
   | true -> env
   | false -> let number_of_var = (MapVar.cardinal s + 1 ) *4 in
-  let ident_var,type_ident = ident in
-    let new_var_map = MapVar.add ident_var (number_of_var,type_ident) s in
+  let ident_var = ident in
+    let new_var_map = MapVar.add ident_var (number_of_var) s in
     update_env label_fun new_var_map env )
 
-let rec add_var_env_from_list ~(label_fun:Id.t) ~(id_list:(Id.t*Type.t) list) ~(env:env):env =
+let rec add_var_env_from_list ~(label_fun:Id.t) ~(id_list:(Id.t) list) ~(env:env):env =
   match id_list with
   | [] -> env
   | e::tail -> add_var_env_from_list ~label_fun:label_fun ~id_list:tail ~env:(add_var_env ~label_fun:label_fun ~ident:e ~env:env)
@@ -173,19 +175,19 @@ let get_var_from ~(label_fun:Id.t) ~(env:env) : string list =
   | None -> []
   | Some s -> get_key s
 
-let get_var_in_env ~(label_fun:Id.t) ~(id:Id.t) ~(env:env) : (int*Type.t) option =
+let get_var_in_env ~(label_fun:Id.t) ~(id:Id.t) ~(env:env) : (int) option =
 
   match MapEnv.find_opt label_fun env with
   | None -> None
   | Some s -> get_var ~id:id ~varmap:s
 
-let rec complete_env ~(var_list:(string*Type.t) list) ~(fun_label:string) ~(closure:closure) ~(env:env) :env =
+let rec complete_env ~(var_list:(string) list) ~(fun_label:string) ~(closure:closure) ~(env:env) :env =
   match var_list with
   | [] -> env
-  | (name,type_name)::tail ->
+  | (name)::tail ->
               let funct_name = get_data name closure in 
               match funct_name with
               | None -> complete_env ~var_list:tail ~fun_label:fun_label ~closure:closure ~env:env
               | Some f when f=fun_label -> complete_env ~var_list:tail ~fun_label:fun_label ~closure:closure ~env:env
-              | Some _ -> let new_env = add_var_env ~label_fun:fun_label ~ident:(name,type_name) ~env:env in 
+              | Some _ -> let new_env = add_var_env ~label_fun:fun_label ~ident:(name) ~env:env in 
                           complete_env ~var_list:tail ~fun_label:fun_label ~closure:closure ~env:new_env

@@ -4,9 +4,8 @@ module Env_closure = Env_closure
 
 
 module S = Set.Make(String)
-module Map_var_add = Map.Make(String)
 
-type fonction_table = (string , Type.t) Hashtbl.t
+type fonction_table = (string , string) Hashtbl.t
 
 (*
 -------------------------------------------
@@ -27,7 +26,7 @@ type t =
   | Div of Id.t * ident
   | IfEq of Id.t * ident * t * t
   | IfLE of Id.t * ident * t * t
-  | Let of (Id.t * Type.t) * t * t
+  | Let of Id.t * t * t
   | Var of Id.t
   | New of ident
   | App of Id.t * Id.t list (*note we have now apply_direct(l, (x1 … xn))*)
@@ -40,7 +39,7 @@ type t =
   | ExtFunApp of Id.t * Id.t list
  
 
-and fundef = { name : Id.t*Type.t; args : (Id.t*Type.t) list; body : t }
+and fundef = { name : Id.t; args : Id.t list; body : t }
 (*rename label by adding _*)
 
 type all_fun = Fun of fundef * all_fun | Main of t
@@ -72,8 +71,8 @@ let rec to_string_t = function
   | IfLE (x, y, e1, e2) ->
       Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y)
         (to_string_t e1) (to_string_t e2)
-  | Let ((x,type_x), e1, e2) ->
-      Printf.sprintf "let %s:%s = %s in\n%s" x (Type.to_string type_x) (to_string_t e1) (to_string_t e2)
+  | Let ((x), e1, e2) ->
+      Printf.sprintf "let %s = %s in\n%s" x (to_string_t e1) (to_string_t e2)
   | App (f, args) ->
       Printf.sprintf "apply_direct(%s(%s))" f (String.concat ", " args)
   | Tuple vars -> Printf.sprintf "(%s)" (String.concat ", " vars)
@@ -88,24 +87,24 @@ let rec to_string_t = function
       Printf.sprintf "ExtCall %s(%s)" f (String.concat " " args)
   | AppClo (f, args) ->
       Printf.sprintf "apply_closure(%s(%s))" f (String.concat ", " args)
-  | New i -> (to_string_ident i)
+  | New i -> ("New "^to_string_ident i)
 
 let rec get_name_arg x =
   match x with
   | [] -> ""
-  | (name,type_name) :: [] -> name^":"^Type.to_string type_name
-  | (name,type_name) :: tail -> name^":"^Type.to_string type_name ^ " " ^ get_name_arg tail
+  | (name) :: [] -> name
+  | (name) :: tail -> name ^ " " ^ get_name_arg tail
 
 let rec to_string_all_fun (all_fun : all_fun) : string =
   match all_fun with
   | Main t -> to_string_t t
   | Fun (fundef, e) ->
-      let name,type_name = fundef.name in
+      let name = fundef.name in
       let arg = fundef.args in
       let param = get_name_arg arg in
       let body = fundef.body in
-      Printf.sprintf "label: %s of %s \nparameters: %s\ncode:\n\n%s\n\n__end__\n\n%s"
-        name (Type.to_string type_name) param (to_string_t body) (to_string_all_fun e)
+      Printf.sprintf "label: %s \nparameters: %s\ncode:\n\n%s\n\n__end__\n\n%s"
+        name  param (to_string_t body) (to_string_all_fun e)
 
 let to_string (toplevel : toplevel) : string = to_string_all_fun toplevel
 
@@ -169,10 +168,10 @@ let rec add_let_closure (id:(Id.t) list)(t:t)(contexte:Id.t)(env:Env_closure.env
               match Env_closure.get_var_in_env ~label_fun:contexte ~id:name ~env:env with
               | None -> add_let_closure tail t contexte  env already_added
               | Some  _ when is_in_table ->  add_let_closure tail t contexte env already_added
-              | Some (i,type_var) -> 
+              | Some i -> 
                  Hashtbl.replace already_added name true;
         
-                (Let((name,type_var),Get("%self",INT i),(add_let_closure tail t contexte env already_added))))
+                (Let((name),Get("%self",INT i),(add_let_closure tail t contexte env already_added))))
 
 
 
@@ -183,7 +182,9 @@ let rec get_id_let (t:t):Id.t list =
   | Not id -> [id]
   | Neg id -> [id]
   | Var id -> [ id]
-  | Add (id,ident)| Sub (id,ident) | Mul (id,ident) | Div (id,ident)  ->( match add_reading_ident ident with
+  | Add (id,ident)| Sub (id,ident) | Mul (id,ident) | Div (id,ident)  ->(
+
+  match add_reading_ident ident with
     | None -> [id]
     | Some id2 -> [id;id2;])
   | IfEq (id,ident,t1,t2) |IfLE (id,ident,t1,t2) -> 
@@ -212,28 +213,28 @@ let rec get_id_let (t:t):Id.t list =
 
 let print_hashtable (tbl : fonction_table) : unit =
   Hashtbl.iter (fun key value ->
-    Printf.printf "%s -> %s\n" key (Type.to_string value)
+    Printf.printf "%s -> %s\n" key value
   ) tbl
 
 let rec add_closure_variable (fundef:Id.t)(var_closure:Id.t list)(env:Env_closure.env)(context:Id.t)(already_added:(string,bool) Hashtbl.t)(t:t)=
  match var_closure with
  | [] -> t
  | e::tail ->
-  let (var,_)= match Env_closure.get_var_in_env ~label_fun:fundef ~id:e ~env:env  with
+  let (var)= match Env_closure.get_var_in_env ~label_fun:fundef ~id:e ~env:env  with
   | None -> failwith ""
   | Some s -> s  in
-  add_let_closure [e] (Let ((fundef^"."^string_of_int (var),Type.Unit) , Put(fundef,INT var,e),add_closure_variable fundef tail env context already_added t)) (context) env already_added
+  add_let_closure [e] (Let ((fundef^"."^string_of_int (var)) , Put(fundef,INT var,e),add_closure_variable fundef tail env context already_added t)) (context) env already_added
 
 let initialise_closure (var_closure_name:Id.t)(env:Env_closure.env)(context:Id.t)(already_added:(string,bool) Hashtbl.t)(t:t):t=
     let var_closure_list = Env_closure.get_var_from ~label_fun:var_closure_name ~env:env in
-    Let ((var_closure_name,Type.Unit),New (INT ((List.length var_closure_list)*4+4  )),
-    Let (("addr_"^var_closure_name,Type.gentyp ()),Var ("_"^var_closure_name),
-    Let ((var_closure_name^".0",Type.Unit),Put (var_closure_name,INT 0,"addr_"^var_closure_name  ),add_closure_variable var_closure_name var_closure_list env context already_added t)) )
+    Let ((var_closure_name),New (INT ((List.length var_closure_list)*4+4  )),
+    Let (("addr_"^var_closure_name),Var ("_"^var_closure_name),
+    Let ((var_closure_name^".0"),Put (var_closure_name,INT 0,"addr_"^var_closure_name  ),add_closure_variable var_closure_name var_closure_list env context already_added t)) )
 
 let initialise_closure_smart (var_closure_name:Id.t)(env:Env_closure.env)(context:Id.t)(already_added:(string,bool) Hashtbl.t)(t:t):t =
   match Env_closure.MapEnv.exists (fun x _not_use -> if x=var_closure_name then true else false ) env  with
-    | true -> initialise_closure var_closure_name env context (already_added:(string,bool) Hashtbl.t)(t)
-    | false -> t
+    | true -> print_endline "true"; initialise_closure var_closure_name env context (already_added:(string,bool) Hashtbl.t)(t)
+    | false -> print_endline "false";t
 
 let rec initialise_closure_smart_list (var_closure_name:Id.t list)(env:Env_closure.env)(context:Id.t)(already_added:(string,bool) Hashtbl.t)(t:t):t =
   match var_closure_name with
@@ -245,13 +246,11 @@ let rec initialise_closure_smart_list (var_closure_name:Id.t list)(env:Env_closu
 --------------------------------------------------------------------------------------------------------------------------------------------
 *)
 
-let ident_conversion (entry : Net_let.ident)(context:string)(map_type:Env_closure.var_type)(map : Env_closure.closure)(env:Env_closure.env) : ident*Env_closure.env =
+let ident_conversion (entry : Net_let.ident)(context:string)(map : Env_closure.closure)(env:Env_closure.env) : ident*Env_closure.env =
   match entry with IDENT id ->
-                                (let type_var:Type.t  = match Env_closure.get_type map_type id with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
+                                (
                                   match Env_closure.need_closure_bool id context map with 
-                                | true -> let new_env = Env_closure.add_var_env ~label_fun:context ~ident:(id,type_var) ~env:env in
+                                | true -> let new_env = Env_closure.add_var_env ~label_fun:context ~ident:(id) ~env:env in
                                   (IDENT (id),new_env)
                                 | false -> (IDENT (id),env) )
     | INT i -> (INT i,env)
@@ -265,84 +264,64 @@ let rec closure_t_rec (net_let : Net_let.t)(context:string) (closure:Env_closure
   | Unit -> (Unit,[],env)
   | Int i -> (Int i,[],env) 
   | Not id ->(
-    let type_var:Type.t  = match Env_closure.get_type map_type id with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
+    
      match Env_closure.need_closure_bool id context closure with
      | false -> (Not id,[],env)
-      | true -> (Not id,[],(Env_closure.add_var_env ~label_fun:context ~ident:(id,type_var) ~env:env)))
+      | true -> (Not id,[],(Env_closure.add_var_env ~label_fun:context ~ident:(id) ~env:env)))
   | Neg id -> (
-    let type_var:Type.t  = match Env_closure.get_type map_type id with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
+    
      match Env_closure.need_closure_bool id context closure with
      | false -> (Neg id,[],env)
-      | true -> (Neg id,[],(Env_closure.add_var_env ~label_fun:context ~ident:(id,type_var) ~env:env)))
+      | true -> (Neg id,[],(Env_closure.add_var_env ~label_fun:context ~ident:(id) ~env:env)))
   | Var id ->  (
-    let type_var:Type.t  = match Env_closure.get_type map_type id with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
+    
      match Env_closure.need_closure_bool id context closure with
      | false -> (Var id,[],env)
-      | true -> (Var id,[],(Env_closure.add_var_env ~label_fun:context ~ident:(id,type_var) ~env:env)))
+     | true -> (Var id,[],(Env_closure.add_var_env ~label_fun:context ~ident:(id) ~env:env)))
   | Add (id1, id2) -> (
-    let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
+
     let env_id1 = 
       match Env_closure.need_closure_bool id1 context closure with
     | false -> env 
-    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env in
-    let new_id2,env_id2 = ident_conversion id2 context map_type closure env_id1 in
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env in
+    let new_id2,env_id2 = ident_conversion id2 context closure env_id1 in
    (Add (id1, new_id2),[],env_id2)
               )
   | Sub (id1, id2) -> 
     (
-      let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
     let env_id1 = 
       match Env_closure.need_closure_bool id1 context closure with
     | false -> env 
-    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env in
-    let new_id2,env_id2 = ident_conversion id2 context map_type closure env_id1 in
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env in
+    let new_id2,env_id2 = ident_conversion id2 context closure env_id1 in
    (Sub (id1, new_id2),[],env_id2)
               )
               
   | Mul (id1, id2) -> 
     (
-      let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
     let env_id1 = 
       match Env_closure.need_closure_bool id1 context closure with
     | false -> env 
-    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env in
-    let new_id2,env_id2 = ident_conversion id2 context map_type closure env_id1 in
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env in
+    let new_id2,env_id2 = ident_conversion id2 context closure env_id1 in
    (Mul (id1, new_id2),[],env_id2)
               )
               
   | Div (id1, id2) -> 
     (
-      let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
     let env_id1 = 
       match Env_closure.need_closure_bool id1 context closure with
     | false -> env 
-    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env in
-    let new_id2,env_id2 = ident_conversion id2 context map_type closure env_id1 in
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env in
+    let new_id2,env_id2 = ident_conversion id2 context closure env_id1 in
    (Div(id1, new_id2),[],env_id2)
               )
   
   | IfEq (id1, id2, t1, t2) ->
-    let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
       let env_id1 = match Env_closure.need_closure_bool id1 context closure with
       | false -> env
-      | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env in
-      let new_id2,env_id2 = ident_conversion id2 context map_type closure env_id1 in
+      | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env in
+      let new_id2,env_id2 = ident_conversion id2 context  closure env_id1 in
 
     let new_t1,then_new_fun,t1_env = closure_t_rec t1 context closure map_type env_id2  in
       let new_t2,else_new_fun,t2_env = closure_t_rec t2 context closure map_type t1_env  in
@@ -350,13 +329,10 @@ let rec closure_t_rec (net_let : Net_let.t)(context:string) (closure:Env_closure
               
       
   | IfLE (id1, id2, t1, t2) ->
-    let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
       let env_id1 = match Env_closure.need_closure_bool id1 context closure with
       | false -> env
-      | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env in
-      let new_id2,env_id2 = ident_conversion id2 context map_type closure  env_id1 in
+      | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env in
+      let new_id2,env_id2 = ident_conversion id2 context closure  env_id1 in
 
     let new_t1,then_new_fun,t1_env = closure_t_rec t1 context closure map_type env_id2 in
       let new_t2,else_new_fun,t2_env = closure_t_rec t2 context closure map_type t1_env  in
@@ -379,48 +355,44 @@ let rec closure_t_rec (net_let : Net_let.t)(context:string) (closure:Env_closure
       let new_t1,new_fun_be_in,env_t1 = closure_t_rec t1 context closure map_type env   in 
       let new_closure = Env_closure.add_element name context closure in
       let new_t2,new_fun_aff_in,env_t2 = closure_t_rec t2 context new_closure new_map env_t1  in
-      (Let ((name,type_name), new_t1, new_t2),new_fun_be_in@new_fun_aff_in,env_t2)
+      (Let ((name), new_t1, new_t2),new_fun_be_in@new_fun_aff_in,env_t2)
   | App (label, elem_list) -> (
 
-    let new_label =match Env_closure.get_data label closure with
-    | None -> label
-    | Some _ -> label
-
+    let new_label =label
   in
     let var_to_add = Env_closure.list_need_closure elem_list context map_type closure in
     let new_env = Env_closure.add_var_env_from_list ~label_fun:context ~id_list:var_to_add ~env:env in
    (App (new_label, elem_list),[],new_env))
   | Tuple list -> 
-    (*TODO : Maybe gone after*)
+
     let var_to_add =Env_closure.list_need_closure list context map_type closure in
     let new_env = Env_closure.add_var_env_from_list ~label_fun:context ~id_list:var_to_add ~env:env in
     (Tuple list,[],new_env)
   | LetTuple (label, id, t) -> 
-    (*TODO : Maybe gone after*)
-    let new_t,new_fun,env = closure_t_rec t context closure map_type env  in
-    (LetTuple (List.map (fun (x,_)-> x) label, id, new_t),new_fun,env)
+    let label_without_list = List.map (fun (x,_)-> x) label in
+    let new_closure = Env_closure.add_element_list label_without_list context closure in
+    let var_to_add =Env_closure.list_need_closure label_without_list context map_type new_closure in
+    let new_env = Env_closure.add_var_env_from_list ~label_fun:context ~id_list:var_to_add ~env:env in
+    let new_env =
+    match Env_closure.need_closure_bool id context new_closure with
+    | false -> new_env
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id) ~env:new_env 
+    in
+    let new_t,new_fun,env = closure_t_rec t context new_closure map_type new_env  in
+    (LetTuple (label_without_list, id, new_t),new_fun,env)
   | Get (id1, id2) -> 
-    let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
     let env_id1 =match Env_closure.need_closure_bool id1 context closure with
-    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env 
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env 
     | false -> env in
-    let new_id2,env_id2 =ident_conversion id2 context map_type closure env_id1 in
+    let new_id2,env_id2 =ident_conversion id2 context closure env_id1 in
     (Get (id1, new_id2 ),[],env_id2)
   | Put (id1, id2, id3) -> 
-    let type_var:Type.t  = match Env_closure.get_type map_type id1 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
     let env_id1 =match Env_closure.need_closure_bool id1 context closure with
-    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1,type_var) ~env:env 
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id1) ~env:env 
     | false -> env in
-    let new_id2,env_id2 =ident_conversion id2 context map_type closure env_id1 in
-    let type_var:Type.t  = match Env_closure.get_type map_type id3 with
-                                | None -> Type.gentyp () 
-                                | Some s -> s in
+    let new_id2,env_id2 =ident_conversion id2 context closure env_id1 in
     let env_id3 =match Env_closure.need_closure_bool id3 context closure with
-    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id3,type_var) ~env:env_id2 
+    | true -> Env_closure.add_var_env ~label_fun:context ~ident:(id3) ~env:env_id2 
     | false -> env_id2 in
     (Put (id1, new_id2 , id3),[],env_id3)
   | ExtArray id -> 
@@ -435,7 +407,7 @@ let rec closure_t_rec (net_let : Net_let.t)(context:string) (closure:Env_closure
     (ExtFunApp (id, id_list),[],new_env)
   
     | LetRec (fundef,t) ->
-    let (name,type_name) = fundef.name in
+    let (name,_) = fundef.name in
     let args_without_type = List.map (remove_type) fundef.args in
 
     let map_letrec = Env_closure.add_arg args_without_type name closure in 
@@ -444,11 +416,10 @@ let rec closure_t_rec (net_let : Net_let.t)(context:string) (closure:Env_closure
     let return,fun_to_add,env_next = closure_t_rec t context closure map_type new_env   in 
 
     let list_var = Env_closure.get_var_from ~label_fun:name ~env:env_next in
-    let new_list_var = List.map (fun x -> (x,match Env_closure.get_type map_type x with | None -> Type.gentyp () | Some s -> s))  list_var in
-    let updated_env = Env_closure.complete_env ~var_list:new_list_var ~fun_label:context ~closure:closure ~env:env_next in
+    let updated_env = Env_closure.complete_env ~var_list:list_var ~fun_label:context ~closure:closure ~env:env_next in
 
 
-    (return, fun_to_add_from_body @[{name=(name,type_name);args=fundef.args;body=new_body}]@fun_to_add,updated_env)
+    (return, fun_to_add_from_body @[{name=(name);args=List.map (fun (name,_)-> name) fundef.args;body=new_body}]@fun_to_add,updated_env)
 
 and closure_fun_rec(net_let : Net_let.t) (context:string) (closure:Env_closure.closure)(map_type_var:Env_closure.var_type ) (env:Env_closure.env): (all_fun*fundef list*Env_closure.env) =
   match net_let with
@@ -462,13 +433,12 @@ and closure_fun_rec(net_let : Net_let.t) (context:string) (closure:Env_closure.c
     let return,fun_to_add,env_next = closure_fun_rec e context closure new_var_map_with_fun_name env_body  in
     
     let list_var = Env_closure.get_var_from ~label_fun:name ~env:env_next in
-    let new_list_var = List.map (fun x -> (x,match Env_closure.get_type new_var_map_with_fun_name x with | None -> Type.gentyp () | Some s -> s))  list_var in
-    let updated_env = Env_closure.complete_env ~var_list:new_list_var ~fun_label:context ~closure:closure ~env:env_next in
+    let updated_env = Env_closure.complete_env ~var_list:list_var ~fun_label:context ~closure:closure ~env:env_next in
 
 
 
 
-    (return, fun_to_add_from_body @[{name=(name,type_name);args=fundef.args;body=new_body}]@fun_to_add,updated_env)
+    (return, fun_to_add_from_body @[{name=(name);args=List.map (fun (name,_)-> name) fundef.args;body=new_body}]@fun_to_add,updated_env)
   | other -> 
     let main,fun_to_add,body_env = closure_t_rec other context closure map_type_var env in
 
@@ -491,7 +461,7 @@ let rec apply_closure_on_let (t:t)(contexte:Id.t)(env:Env_closure.env)(already_a
     let new_t2 = apply_closure_t t2 contexte env already_added fonction_table in
     IfLE(id,ident,new_t1,new_t2)
   | App (id,id_list) -> (
-
+    print_endline id;
     match Hashtbl.find_opt fonction_table id with
     | None ->  AppClo(id,id_list)
     | Some _ ->
@@ -538,18 +508,8 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
      add_let_closure list (IfLE (id,ident,apply_closure_t t1 contexte env copy_table fonction,apply_closure_t t2 contexte env copy_table fonction))contexte env already_added
 
     
-  | Let ((label,type_label), t1 , t2) ->(
-                              let new_type_label = 
-                                match t1 with
-                                | App (i,_) -> Some i
-                                | _ -> None
-                              in
-                              let type_label = match new_type_label with
-                              | None -> type_label
-                              | Some i  -> (match Hashtbl.find_opt fonction i with
-                              | None -> type_label
-                              | Some type_fun -> type_fun ) in
-
+  | Let ((label), t1 , t2) ->(
+                              print_endline label;
                               let list_id_body = get_id_let t1 in 
                               let copy_table = Hashtbl.copy already_added in
                               pre_turn_true list_id_body contexte env copy_table;
@@ -557,11 +517,12 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
                               let list_var = match t1 with
                               | App (id,list_id) -> id::list_id
                               | AppClo (id,list_id) ->id::list_id
+                              
                               | _ -> [] in
                               match list_var with
-                              | [] -> add_let_closure list_id_body ( Let ((label,type_label), apply_closure_on_let (t1) contexte env already_added fonction, apply_closure_t t2 contexte env copy_table fonction))contexte env already_added 
+                              | [] -> add_let_closure list_id_body ( Let ((label), apply_closure_on_let (t1) contexte env already_added fonction, apply_closure_t t2 contexte env copy_table fonction))contexte env already_added 
                               | _  -> initialise_closure_smart_list list_var env contexte already_added (
-                              Let ((label,type_label), apply_closure_on_let (t1) contexte env already_added fonction, apply_closure_t t2 contexte env copy_table fonction) )
+                              Let ((label), apply_closure_on_let (t1) contexte env already_added fonction, apply_closure_t t2 contexte env copy_table fonction) )
   )
   | Var id ->
     (match Env_closure.MapEnv.exists (fun x _not_use -> if x=id then true else false ) env  with
@@ -569,6 +530,7 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
     | false -> add_let_closure ([id])(Var id)(contexte)(env) already_added )
      
   | App (id,id_list) -> ( 
+  
     initialise_closure_smart_list id_list env contexte already_added (
     match Hashtbl.find_opt fonction id with
     | None ->  add_let_closure (id_list) (AppClo(id,id_list)) (contexte) (env) already_added 
@@ -579,7 +541,13 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
     ))
       )
   | Tuple (id_list) -> add_let_closure id_list (Tuple(id_list)) contexte env already_added (*TODO after the tuple*)
-  | LetTuple (label_list,id,t) -> LetTuple(label_list,id,t) (*TODO after the tuple*)
+  | LetTuple (label_list,id,t) -> 
+    
+
+
+    let copy_table = Hashtbl.copy already_added in
+    pre_turn_true [id] contexte env copy_table;
+    add_let_closure (label_list@[id]) (LetTuple(label_list,id,apply_closure_t t contexte env copy_table fonction)) contexte env already_added 
   | Get (id,ident) -> let list = match add_reading_ident ident with 
     | None -> [id]
     | Some id2 -> [id;id2] in
@@ -589,7 +557,7 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
     | Some id3 -> [id1;id2;id3] in
      add_let_closure list (Put(id1,ident,id2))(contexte)(env) already_added 
   | ExtArray (id) -> add_let_closure ([id]) (ExtArray(id)) contexte env already_added 
-  | ExtFunApp (id,id_list) ->add_let_closure (id_list) (ExtFunApp(id,id_list)) contexte env already_added 
+  | ExtFunApp (id,id_list) ->add_let_closure (id_list) (ExtFunApp("_"^id,id_list)) contexte env already_added 
   | AppClo (id,id_list) -> 
     initialise_closure_smart_list id_list env contexte already_added (
     ( add_let_closure (id_list) (AppClo(id,id_list)) (contexte) (env) already_added ))
@@ -597,19 +565,22 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
   | INT i -> New(INT i)
   | IDENT id -> add_let_closure ([id])(New(IDENT id))(contexte)(env) already_added ) 
 let rec apply_closure_fundef (all_fun:all_fun)(env:Env_closure.env)(function_list:fonction_table):all_fun =
+  Env_closure.print_env env;
+  print_hashtable function_list;
   match all_fun with
   | Fun (fun_def,all_fun) -> 
     
-    let name,type_var = fun_def.name in
-    Hashtbl.add function_list name type_var ;
+    let name = fun_def.name in
+    Hashtbl.add function_list name name ;
 
     let args = fun_def.args in
     let map_var = create_hastbl name env in
 
     let body = apply_closure_t (fun_def.body) name env map_var function_list in
-    let new_fun = {name=(name,type_var) ; args=args ; body=body} in
+    let new_fun = {name=(name) ; args=args ; body=body} in
     Fun(new_fun,apply_closure_fundef all_fun env function_list)
   | Main body -> let map_var = create_hastbl "_" env in
+    
     Main (apply_closure_t body "_" env map_var function_list) 
 
 let apply_closure (toplevel:toplevel)(env:Env_closure.env):toplevel =

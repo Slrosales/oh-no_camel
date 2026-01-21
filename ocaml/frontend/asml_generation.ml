@@ -3,7 +3,6 @@ module Asml = Core.Asml
 let convert_ident (closure : Closure.ident) : Asml.ident_or_imm =
   match closure with INT i -> Asml.INT i | IDENT id -> Asml.IDENT id
 
-let remove_type elem = match elem with name, _ -> name
 
 let rec mem_store pointer_tuple vars_to_store offset rest =
   match vars_to_store with
@@ -17,7 +16,7 @@ let rec mem_store pointer_tuple vars_to_store offset rest =
 let rec mem_load vars_to_bind pointer_source offset rest =
   match vars_to_bind with
   | [] -> rest
-  | elem :: elems ->
+  | _elem :: elems ->
       Asml.LET
         ( "_",
           Asml.MemLoad (pointer_source, Asml.INT offset),
@@ -63,7 +62,7 @@ let rec closure_rec (closure : Closure.t) : Asml.exp =
 and closure_rec_let (closure : Closure.t) : Asml.asmt =
   match closure with
   (*Tuple creation*)
-  | Let ((elem, typ), Tuple args, rest) ->
+  | Let (elem, Tuple args, rest) ->
       let size =
         List.length args * 4 (*bytes*)
       in
@@ -73,15 +72,15 @@ and closure_rec_let (closure : Closure.t) : Asml.asmt =
           mem_store elem args 0 (closure_rec_let rest) )
   (*Tuple destruction*)
   | LetTuple (vars, ptr, rest) -> mem_load vars ptr 0 (closure_rec_let rest)
-  | Let ((id, _), t1, t2) -> LET (id, closure_rec t1, closure_rec_let t2)
+  | Let ((id), t1, t2) -> LET (id, closure_rec t1, closure_rec_let t2)
   | _ -> EXP (closure_rec closure)
 
 let rec creation_function (closure : Closure.all_fun) : Asml.fundef =
   match closure with
   | Fun (fundef, b) ->
-      let tmp_name, _ = fundef.name in
+      let tmp_name = fundef.name in
       let name = "_" ^ tmp_name in
-      let args = List.map remove_type fundef.args in
+      let args = fundef.args in
       let body = closure_rec_let fundef.body in
       let newfundef : Asml.letfun = { name; args; body } in
       Function (newfundef, creation_function b)
