@@ -47,12 +47,12 @@ let rec closure_rec (closure : Closure.t) : Asml.exp =
           closure_rec_let then_body,
           closure_rec_let else_body )
   | App (t, t_list) -> Call (t, t_list)
-  | Tuple _t_list -> failwith "Not supposed to be printed. Tuple for closure_rec"
+  | Tuple _t_list ->
+      failwith "Not supposed to be printed. Tuple for closure_rec"
   | LetTuple (_type_list, _t1, _t2) ->
       failwith "Not supposed to be printed. LetTuple for closure_rec"
   (* Accessing global array label, because 'create_array' is treat as ExtFuncApp in this point *)
-  | ExtArray id ->
-      Label id
+  | ExtArray id -> Label id
   | ExtFunApp (name, list_arg) -> Call (name, list_arg)
   | New id -> New (convert_ident id)
   | AppClo (t, t_list) -> Callclo (t, t_list)
@@ -65,12 +65,21 @@ and closure_rec_let (closure : Closure.t) : Asml.asmt =
   (*Tuple creation*)
   | Let ((elem, typ), Tuple args, rest) ->
       let size =
-        List.length args * 4 (*bytes*)
+        List.length args * 4
+        (*bytes*)
       in
       Asml.LET
         ( elem,
           Asml.New (Asml.INT size),
           mem_store elem args 0 (closure_rec_let rest) )
+      (*Tuple as a return value*)
+  | Tuple args ->
+      let size = List.length args * 4 in
+      let temp = Id.genid () in
+      Asml.LET
+        ( temp,
+          Asml.New (Asml.INT size),
+          mem_store temp args 0 (EXP (Asml.Ident (Asml.IDENT temp))) )
   (*Tuple destruction*)
   | LetTuple (vars, ptr, rest) -> mem_load vars ptr 0 (closure_rec_let rest)
   | Let ((id, _), t1, t2) -> LET (id, closure_rec t1, closure_rec_let t2)
