@@ -173,19 +173,17 @@ _min_caml_create_array:
     mov r4, r0              @ Save size
     mov r5, r1              @ Save the initial value in r5
     
-    @ onvert number of elements to bytes (elements * 4)
     lsl r0, r4, #2          @ Shift left by 2
     
-    @Allocate the memory
+    @ Allocate the memory
     bl _min_caml_alloc     
     
-    @ Step 3: Fill the array with the initial value
-    mov r2, #0              @ i = 0 (loop counter)
+    mov r2, #0              @ loop counter i = 0
 .l_init_loop:
     cmp r2, r4              @ Check if i == size
     beq .l_init_done        @ If yes, exit loop
     
-    @ memory[base + (i * 4)] = initial_value
+
     str r5, [r0, r2, lsl #2] 
     
     add r2, r2, #1          @ i++

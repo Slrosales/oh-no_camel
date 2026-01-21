@@ -426,15 +426,28 @@ let rec emit_exp oc dest_reg exp =
           ) args;
           List.iteri (fun i arg ->
             if i >= 4 then (
-              load_val oc "r4" (A.IDENT arg);
+              load_val oc "r12" (A.IDENT arg);
               let spill_offset = (i - 4) * 4 in
-              Printf.fprintf oc "\t str r4, [r13, #%d]\n" spill_offset
+              Printf.fprintf oc "\t str r12, [r13, #%d]\n" spill_offset
             )
           ) args;
           Printf.fprintf oc "\t bl %s\n" (Id.to_string func_name);
           if dest_reg <> "r0" then 
             Printf.fprintf oc "\t mov %s, r0\n" dest_reg
 
+  (* | A.Callclo (function_name, arguments) ->
+      Printf.printf "Evaluating Closure\n";
+
+      let number_of_arguments = ref 0 in
+      let function_pointer = ref 0 in
+
+      Printf.fprintf oc "\tpush {lr}\n";
+
+      List.iteri (fun index argument ->
+        number_of_arguments := index - 1;
+        function_pointer := ((get_slot argument) - (number_of_arguments * 4));
+        Printf.fprintf oc ""
+        ) *)
 
   | A.MemLoad (array, index) ->
       load_val oc "r0" (A.IDENT array);
@@ -456,23 +469,23 @@ let rec emit_exp oc dest_reg exp =
 
   | _ -> () 
 
-and emit_if oc cond id ident asmt1 asmt2 =
+and emit_if oc condition l_operand r_operand inst_true inst_false =
   let l_then, l_end = gen_label "then", gen_label "else_end" in
-  let r_lhs = (match Part_1.get_loc id with 
+  let r_lhs = (match Part_1.get_loc l_operand with 
     | Part_1.Reg r -> r 
     | Part_1.Stack off -> Printf.fprintf oc "\t ldr r2, [r11, #%d]\n" off; "r2") in
-  let r_rhs = (match ident with 
+  let r_rhs = (match r_operand with 
     | A.INT i -> Printf.fprintf oc "\t mov r3, #%d\n" i; "r3" 
     | A.IDENT id_rhs -> 
         (match Part_1.get_loc id_rhs with 
         | Part_1.Reg r -> r 
         | Part_1.Stack off -> Printf.fprintf oc "\t ldr r3, [r11, #%d]\n" off; "r3")) in
   Printf.fprintf oc "\t cmp %s, %s\n" r_lhs r_rhs;
-  Printf.fprintf oc "\t %s %s\n" cond l_then;
-  emit_asmt oc asmt2;
+  Printf.fprintf oc "\t %s %s\n" condition l_then;
+  emit_asmt oc inst_false;
   Printf.fprintf oc "\t b %s\n" l_end;
   Printf.fprintf oc "%s:\n" l_then;
-  emit_asmt oc asmt1;
+  emit_asmt oc inst_true;
   Printf.fprintf oc "%s:\n" l_end
 
 and emit_asmt oc asmt = 

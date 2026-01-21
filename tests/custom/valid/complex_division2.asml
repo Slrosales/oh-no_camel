@@ -1,0 +1,11 @@
+let _ =
+    let a = 1000 in
+    let b = 2 in
+    let c = 15 in
+    let d = div a b in
+    let e = div d c in
+    let f = 2 in
+    let g = 4 in
+    let h = div e f in
+    let i = div h g in
+    call _min_caml_print_int i
