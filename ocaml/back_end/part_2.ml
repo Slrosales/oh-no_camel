@@ -469,23 +469,23 @@ let rec emit_exp oc dest_reg exp =
 
   | _ -> () 
 
-and emit_if oc cond id ident asmt1 asmt2 =
+and emit_if oc condition l_operand r_operand inst_true inst_false =
   let l_then, l_end = gen_label "then", gen_label "else_end" in
-  let r_lhs = (match Part_1.get_loc id with 
+  let r_lhs = (match Part_1.get_loc l_operand with 
     | Part_1.Reg r -> r 
     | Part_1.Stack off -> Printf.fprintf oc "\t ldr r2, [r11, #%d]\n" off; "r2") in
-  let r_rhs = (match ident with 
+  let r_rhs = (match r_operand with 
     | A.INT i -> Printf.fprintf oc "\t mov r3, #%d\n" i; "r3" 
     | A.IDENT id_rhs -> 
         (match Part_1.get_loc id_rhs with 
         | Part_1.Reg r -> r 
         | Part_1.Stack off -> Printf.fprintf oc "\t ldr r3, [r11, #%d]\n" off; "r3")) in
   Printf.fprintf oc "\t cmp %s, %s\n" r_lhs r_rhs;
-  Printf.fprintf oc "\t %s %s\n" cond l_then;
-  emit_asmt oc asmt2;
+  Printf.fprintf oc "\t %s %s\n" condition l_then;
+  emit_asmt oc inst_false;
   Printf.fprintf oc "\t b %s\n" l_end;
   Printf.fprintf oc "%s:\n" l_then;
-  emit_asmt oc asmt1;
+  emit_asmt oc inst_true;
   Printf.fprintf oc "%s:\n" l_end
 
 and emit_asmt oc asmt = 
