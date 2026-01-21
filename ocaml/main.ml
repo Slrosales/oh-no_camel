@@ -152,7 +152,7 @@ let () =
       ( "-asml_output",
         Arg.String (fun s -> output_asml_file := Some s),
         "output asml file name" );
-      ("-Opt",Arg.Int (fun i -> opt:= i),"Choose a level of Optimisation:\n\t0 = None (default),\n\t1 = remove any let var = integer that are useless and do add,sub,mul,div that have both integer as operand\n\t2 same as 1 but can swap var and imidiate value in add or mul if need it" )
+      ("-O",Arg.Int (fun i -> opt:= i),"Choose a level of Optimisation:\n\t0 = None (default),\n\t1 = remove any let var = integer that are useless and do add,sub,mul,div that have both integer as operand\n\t2 same as 1 but can swap var and imidiate value in add or mul if need it" )
     ]
     (fun s -> files := !files @ [ s ])
     (Printf.sprintf
