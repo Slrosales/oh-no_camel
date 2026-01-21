@@ -1,6 +1,7 @@
 %{
 open Syntax
 let addtyp x = (x, Type.gentyp ())
+exception SyntaxError of string 
 %}
 
 /* tokens */
@@ -67,7 +68,8 @@ simple_exp:
 | INT
     { Int($1) }
 | FLOAT
-    { Float($1) }
+    {  Format.eprintf " warning: float operation is not supported, skipping@.";
+        Float($1) }
 | IDENT
     { Var($1) }
 | simple_exp DOT LPAREN exp RPAREN
@@ -138,22 +140,36 @@ exp: /* expressions */
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { Array($2, $3) }
-| error
-    { failwith
-	(Printf.sprintf "parse error near characters %d-%d"
-	   (Parsing.symbol_start ())
-	   (Parsing.symbol_end ())) }
+| error 
+{ raise (SyntaxError 
+    (Printf.sprintf "Parse error near characters %d-%d"
+    (Parsing.symbol_start())
+    (Parsing.symbol_end())
+    ))
+
+}
 
 fundef:
 | IDENT formal_args EQUAL exp
     { { name = addtyp $1; args = $2; body = $4 } }
+| error 
+ { raise (SyntaxError 
+    (Printf.sprintf "Parse error for function definition near characters %d-%d"
+    (Parsing.symbol_start())
+    (Parsing.symbol_end())
+    ))}
 
 formal_args:
 | IDENT formal_args
     { addtyp $1 :: $2 }
 | IDENT
     { [addtyp $1] }
-
+| error 
+ { raise (SyntaxError 
+    (Printf.sprintf "Parse error the input argument doesnt match the expected list near characters %d-%d"
+    (Parsing.symbol_start())
+    (Parsing.symbol_end())
+    ))}
 actual_args:
 | actual_args simple_exp
     %prec prec_app
