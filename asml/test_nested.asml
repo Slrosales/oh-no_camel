@@ -1,8 +1,0 @@
-let a = 10 in
-let b = 20 in
-let c = 30 in
-let v5 = 5 in
-let z = add a b in
-let y = add c v5 in
-let res = add z y in
-res

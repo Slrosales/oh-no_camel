@@ -1,4 +1,0 @@
-let _main =
-    let x1 = 1
-    let x2 = 2
-    add x1 x2

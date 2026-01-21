@@ -12,15 +12,15 @@ let _all_regs_test a b c d =
   let v5 = 500 in         (* Target: r8 *)
   
 
-  let sum1 = add a v1 in  (* uses r0 and r4 *)
-  let sum2 = add b v2 in  (* uses r1 and r5 *)
-  let sum3 = add c v3 in  (* uses r2 and r6 *)
-  let sum4 = add d v4 in  (* uses r3 and r7 *)
+  let sum1 = add a v1 in  (* uses r0 and r4, 101 *)
+  let sum2 = add b v2 in  (* uses r1 and r5, 202 *)
+  let sum3 = add c v3 in  (* uses r2 and r6, 303 *)
+  let sum4 = add d v4 in  (* uses r3 and r7, 404 *)
   
-  let tmp1 = add sum1 sum2 in
-  let tmp2 = add sum3 sum4 in
-  let tmp3 = add tmp1 tmp2 in
-  add tmp3 v5             (* Result in r0 *)
+  let tmp1 = add sum1 sum2 in (* 303 *)
+  let tmp2 = add sum3 sum4 in (* 707 *)
+  let tmp3 = add tmp1 tmp2 in (* 1010 *)
+  add tmp3 v5             (* Result in r0, 1510 *)
 
 let _ =
   let p1 = 1 in

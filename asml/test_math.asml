@@ -1,5 +1,0 @@
-let a = 100 in
-let b = 50 in
-let c = a - b in
-let d = c - 10 in
-d

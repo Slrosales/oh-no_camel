@@ -1,5 +1,0 @@
-let _ =
-  let a = 12 in
-  let b = 3 in
-  let product = mul a b in
-  call _min_caml_print_int product
