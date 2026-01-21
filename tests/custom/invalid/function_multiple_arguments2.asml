@@ -1,4 +1,4 @@
-let _sum_of_7_arguments a b c d e =
+let _sum_of_7_arguments a b c d e f g =
     let sum1 = add a b in
     let sum2 = add sum1 c in
     let sum3 = add sum2 d in

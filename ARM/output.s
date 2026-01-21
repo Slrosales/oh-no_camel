@@ -9,8 +9,10 @@ _sum_of_7_arguments:
 	 add r6, r5, r3
 	 ldr r3, [r11, #4]
 	 add r7, r6, r3
-	 add r8, r7, r0
-	 add r0, r8, r0
+	 ldr r3, [r11, #8]
+	 add r8, r7, r3
+	 ldr r3, [r11, #12]
+	 add r0, r8, r3
 	 sub r13, r11, #32
 	 pop {r4-r10, r11, r15}
 
