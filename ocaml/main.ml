@@ -18,6 +18,10 @@ let parse_only = ref false
 let output_asml = ref false
 let output_asml_file = ref None
 let asml_only = ref false
+<<<<<<< HEAD
+=======
+let opt = ref 0
+>>>>>>> main
 let asml_input_mode = ref false
 
 let print_ast l =
@@ -113,7 +117,13 @@ let file f =
       | Some s -> Asml.write_file ~output_file:s asml);
     Printf.printf "Ending: ASML\n\n";
 
-    Register_allocation.generate_assembly oc asml;
+    Printf.printf "Start optimization: \n\n";
+    let new_asml = if !opt != 0 then (Optimisation_local.optimisation_local asml !opt) else asml in
+    Printf.printf "End_optimization \n\n";
+    if !verbose then (
+      print_endline "\n--- ASML ---";
+      print_endline (Asml.to_string new_asml));
+    Register_allocation.generate_assembly oc new_asml;
 
     (*ARM allocation*)
     close_out oc;
@@ -156,6 +166,7 @@ let () =
       ( "-asml_output",
         Arg.String (fun s -> output_asml_file := Some s),
         "output asml file name" );
+      ("-O",Arg.Int (fun i -> opt:= i),"Choose a level of Optimisation:\n\t0 = None (default),\n\t1 = remove any let var = integer that are useless and do add,sub,mul,div that have both integer as operand\n\t2 same as 1 but can swap var and imidiate value in add or mul if need it" )
     ]
     (fun s -> files := !files @ [ s ])
     (Printf.sprintf
