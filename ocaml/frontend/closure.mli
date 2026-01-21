@@ -15,7 +15,7 @@ type t =
   | Div of Id.t * ident
   | IfEq of Id.t * ident * t * t
   | IfLE of Id.t * ident * t * t
-  | Let of (Id.t * Type.t) * t * t
+  | Let of Id.t * t * t
   | Var of Id.t
   | New of ident
   | App of Id.t * Id.t list (*note we have now apply_direct(l, (x1 … xn))*)
@@ -27,7 +27,7 @@ type t =
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
   
-and fundef = { name : Id.t*Type.t; args : (Id.t*Type.t) list; body : t }
+and fundef = { name : Id.t; args : Id.t list; body : t }
 (*rename label by adding _ in front for exemple function f become '_f' *)
 
 type all_fun = Fun of fundef * all_fun | Main of t

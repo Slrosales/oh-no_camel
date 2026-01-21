@@ -65,7 +65,7 @@ let apply_operation(op:operande)(op1:int)(op2:int):Asml.exp=
   | Sub -> Ident(INT (op1-op2))
   | Mul -> Ident(INT (op1*op2))
   | Div -> Ident(INT (op1/op2))
-let operation_with_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(opt:int)(var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t):Asml.exp=
+let operation_with_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(opt:int)(var_assoctiation:(string,int)Hashtbl.t):Asml.exp=
   let op1 = Hashtbl.find_opt var_assoctiation id in
                       match ident with
                       | INT i -> (match op1 with
@@ -81,7 +81,7 @@ let operation_with_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(opt:
                                                             else produce_operation op id ident
                                         | (Some i1,Some i2) -> has_been_optimize:=true ;apply_operation op i1 i2 )
 
-let operation_without_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t):Asml.exp=
+let operation_without_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(var_assoctiation:(string,int)Hashtbl.t):Asml.exp=
   let op1 = Hashtbl.find_opt var_assoctiation id in
                       match ident with
                       | INT i -> (match op1 with
@@ -114,10 +114,10 @@ let rec fonction_optimization_recurrency_exe(exe:Asml.exp)(opt:int) (var_assocti
   | FSub (id1,id2) -> FSub (id1,id2)
   | FMul(id1,id2) -> FMul (id1,id2)
   | FDiv(id1,id2) -> FDiv(id1,id2)
-  | Add (id,ident) -> operation_with_switch Add id ident opt var_assoctiation var_depedency
-  | Sub(id,ident) -> operation_without_switch Sub id ident var_assoctiation var_depedency
-  | Div(id,ident) -> operation_without_switch Div id ident var_assoctiation var_depedency
-  | Mul(id,ident) -> operation_with_switch Mul id ident opt var_assoctiation var_depedency
+  | Add (id,ident) -> operation_with_switch Add id ident opt var_assoctiation 
+  | Sub(id,ident) -> operation_without_switch Sub id ident var_assoctiation 
+  | Div(id,ident) -> operation_without_switch Div id ident var_assoctiation
+  | Mul(id,ident) -> operation_with_switch Mul id ident opt var_assoctiation 
   | IfLE (id1,IDENT(id2),asmt1,asmt2) ->(match Hashtbl.find_opt var_assoctiation id2 with
                                         | None -> IfLE (id1,IDENT(id2),fonction_optimization_recurrency_asmt asmt1 opt var_assoctiation var_depedency,fonction_optimization_recurrency_asmt asmt2 opt var_assoctiation var_depedency)
                                         | Some i -> has_been_optimize:=true;IfLE (id1,INT(i),fonction_optimization_recurrency_asmt asmt1 opt var_assoctiation var_depedency,fonction_optimization_recurrency_asmt asmt2 opt var_assoctiation var_depedency) )
@@ -143,6 +143,9 @@ and fonction_optimization_recurrency_asmt(asmt:Asml.asmt)(opt:int)(var_assoctiat
 
 let rec delete_useless_asmt (asmt:Asml.asmt)(var_depedency:(string,int)Hashtbl.t):Asml.asmt=
   match asmt with
+  | LET (id1,Call(id2,id_list),asmt) -> LET (id1,Call(id2,id_list),delete_useless_asmt asmt var_depedency)
+  | LET(id1,Callclo(id2,id_list),asmt) ->LET(id1,Callclo(id2,id_list),delete_useless_asmt asmt var_depedency)
+    
   | LET (id,exp,asmt) -> (match Hashtbl.find_opt var_depedency id with
                             
                             | Some i when i=0 -> delete_useless_asmt asmt var_depedency
