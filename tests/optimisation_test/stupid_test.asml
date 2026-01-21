@@ -1,0 +1,8 @@
+let _ =
+    let x = 5 in
+    let y = 3 in
+    let x1 = x in
+    let x2 = x1 in
+    let z = x1 in
+    let ret = div x2 y in
+    call _min_caml_print_int ret
