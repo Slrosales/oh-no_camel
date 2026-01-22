@@ -61,7 +61,6 @@ let file f =
   (* Change done here by backend  *)
   let arm_name = match !output_file with Some s -> s | None -> "output.s" in
   let oc = open_out arm_name in
-  print_endline "panick";
   try
     let asml =
       match !asml_input_mode with
