@@ -1,0 +1,12 @@
+let _f x y =
+  let m = add x y in
+  let n = 1 in
+  let r = sub m n in
+  let t = 10 in
+  sub t r
+
+let _ =
+  let x = 4 in
+  let y = 1 in
+  let z = call _f x y in
+  call _min_caml_print_int z

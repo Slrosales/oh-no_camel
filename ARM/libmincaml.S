@@ -139,3 +139,59 @@ _min_caml_print_int:
 	ldmfd	sp!, {lr}
         bx	lr
         .size _min_caml_print_int, .-_min_caml_print_int
+
+
+
+
+.data
+    .align 4
+heap_ptr:
+    .word heap_start      @ Adress of next free byte
+heap_start:
+    .space 20000          @ 20k byte heap (Arbitrary value)
+
+
+
+
+.text
+    .globl _min_caml_alloc
+_min_caml_alloc:
+    ldr r1, =heap_ptr     @ Get the address of our pointer 
+    ldr r2, [r1]          @ Load the actual current heap address into r2
+    mov r3, r2            @ Save current address 
+    add r2, r2, r0        @ Add the requested bytes to the pointer
+    str r2, [r1]          @ Save new pointer back to memory
+    mov r0, r3            @ Put the original start address in r0 for return
+    bx  lr                @ Return to caller
+    .size _min_caml_alloc, .-_min_caml_alloc
+
+
+
+.globl _min_caml_create_array
+_min_caml_create_array:
+    stmfd sp!, {r4, r5, lr} @ Save registers
+    mov r4, r0              @ Save size
+    mov r5, r1              @ Save the initial value in r5
+    
+    @ Convert number of elements to bytes (elements * 4)
+    lsl r0, r4, #2          @ Shift left by 2
+    
+    @ Allocate the memory
+    bl _min_caml_alloc     
+    
+    @ Fill the array with the initial value
+    mov r2, #0              @ i = 0 (loop counter)
+.l_init_loop:
+    cmp r2, r4              @ Check if i == size
+    beq .l_init_done        @ If yes, exit loop
+    
+
+    str r5, [r0, r2, lsl #2] 
+    
+    add r2, r2, #1          @ i++
+    b .l_init_loop          @ Repeat
+    
+.l_init_done:
+    ldmfd sp!, {r4, r5, lr} @ Restore registers
+    bx lr                   @ Return
+    .size _min_caml_create_array, .-_min_caml_create_array

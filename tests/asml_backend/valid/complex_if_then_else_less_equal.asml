@@ -1,0 +1,20 @@
+let _ =
+    let a = 3 in
+    let b = 6 in
+    if a <= b then (
+        if a <= 2 then (
+            let c = 3 in
+            call _min_caml_print_int c
+        ) else (
+            let d = 4 in
+            call _min_caml_print_int d
+        )
+    ) else (
+        if a <= 1 then (
+            let e = add a b in
+            call _min_caml_print_int e
+        ) else (
+            let f = sub b a in
+            call _min_caml_print_int f
+        )
+    )

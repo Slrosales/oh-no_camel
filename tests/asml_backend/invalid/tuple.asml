@@ -1,0 +1,30 @@
+let _ =
+  let size = 2 in
+  let init = 0 in
+  let arr = call _min_caml_create_array size init in
+
+  let t1_size = 2 in
+  let t1 = new t1_size in
+  let char_a = 65 in
+  let num_100 = 100 in
+  let idx0 = 0 in
+  let idx1 = 1 in
+
+  let d1 = mem(t1 + idx0) <- char_a in
+  let d2 = mem(t1 + idx1) <- num_100 in
+
+  let t2_size = 2 in
+  let t2 = new t2_size in
+  let char_b = 66 in
+  let num_200 = 200 in
+  let d3 = mem(t2 + idx0) <- char_b in
+  let d4 = mem(t2 + idx1) <- num_200 in
+
+  let i0 = 0 in
+  let i1 = 1 in
+  let d5 = mem(arr + i0) <- t1 in
+  let d6 = mem(arr + i1) <- t2 in
+
+  let grabbed_t2 = mem(arr + i1) in
+  let res_num = mem(grabbed_t2 + idx1) in
+  call _min_caml_print_int res_num

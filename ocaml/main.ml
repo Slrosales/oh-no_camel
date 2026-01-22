@@ -3,39 +3,65 @@ module Parser = Core.Parser
 module Lexer = Core.Lexer
 module Asml = Core.Asml
 module Type = Core.Type
-module Lexer_asml = Core.Lexer_asml
 module Parser_asml = Core.Parser_asml
-open Frontend
-open Back_end
+module Lexer_asml = Core.Lexer_asml
+module Part_1 = Back_end.Part_1
+module Part_2 = Back_end.Part_2
+module Optimisation_local = Back_end.Optimisation_local
+module Register_allocation = Back_end.Register_allocation
+module K_normalization = Frontend.K_normalization
+module Typechecking = Frontend.Typechecking
+module Alpha_conversion = Frontend.Alpha_conversion
+module Net_let = Frontend.Net_let
+module Closure = Frontend.Closure
+module Asml_generation = Frontend.Asml_generation
 
 let output_file = ref None
-let _usage_message = ""
-let info_set = "TODO write info\n"
-let version = "v0.1"
+
+
+
+let version = "version :1.0.0"
 let verbose = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let output_asml = ref false
-let output_asml_file = ref None
-let asml_only = ref false
+let output_asml_file=ref None
 let opt = ref 0
 let asml_input_mode = ref false
+let register_alloc_mode = ref "lc"
+
+let info_set = "MinCaml is a compiler that turn mincaml into ARM code\n
+Usage: ./mincamlc [options] files
+Version: v1
+Autor:
+                
+Option :
+-o               -> output file name
+-h/help          -> Print the helper
+-v               -> Print version
+-verbose         -> Activate verbose
+-type_only       -> Only execute up to type checking
+-parsing_only    -> Only execute up to parsing
+-asml_input_mode -> Read asml file from the input file you enter
+-asml            -> Produce asml_output_file
+-asml_output     -> output asml file name
+-reg_alloc       -> Register allocation mode: 'lc' (Linear Scan) or 'spill' (Full Spill)
+-O               ->Choose a level of Optimisation:\n\n\t\t\t0 = None (default),\n\t\t\t1 = remove any let var = integer that are useless and do add,sub,mul,div that have both integer as operand,\n\t\t\t2 same as 1 but can swap var and imidiate value in add or mul if need it
+"
 
 let print_ast l =
-  print_string (Syntax.to_string l);
-  print_newline ()
+  print_string (Syntax.to_string l); print_newline ()
 
 let print_knorm k =
-  print_string (K_normalization.to_string k);
-  print_newline ()
+  print_string (K_normalization.to_string k); print_newline ()
 
-let file f =
+let file f = 
   let inchan = open_in f in
 
   (* Change done here by backend  *)
   let arm_name = match !output_file with Some s -> s | None -> "output.s" in
   let oc = open_out arm_name in
-
+  print_endline "panick";
   try
     let asml =
       match !asml_input_mode with
@@ -53,7 +79,7 @@ let file f =
           (* 1.5 Type Checking *)
           let typed_script =
             try Typechecking.f file_script 
-            with Typechecking.Type_Error (e, t1, t2) ->
+            with Typechecking.Type_Error (_e, t1, t2) ->
               Printf.eprintf "\n[Type Error]\n";
               Printf.eprintf "  Mismatch between: %s\n" (Type.to_string t1);
               Printf.eprintf "               and: %s\n" (Type.to_string t2);
@@ -120,17 +146,37 @@ let file f =
     if !verbose then (
       print_endline "\n--- ASML ---";
       print_endline (Asml.to_string new_asml));
-    Register_allocation.generate_assembly oc new_asml;
+    
+    match !register_alloc_mode with
+    | "spill" -> 
+        if !verbose then print_endline "--- Using Spill Backend (register_allocation.ml) ---";
+        Register_allocation.reset_stack ();
+        Register_allocation.generate_assembly oc new_asml
+
+    | "lc" | _ -> 
+        if !verbose then print_endline "--- Using LC Backend ---";
+        let rec allocate_all p = match p with
+          | Asml.Function (f, next) -> 
+              Part_1.allocate_registers f.body f.args; 
+              allocate_all next
+          | Asml.Main asmt -> 
+              Part_1.allocate_registers asmt []
+          | _ -> () 
+        in
+        allocate_all new_asml;
+        
+        Part_2.generate_assembly oc new_asml;
+
 
     (*ARM allocation*)
+      (* Change done here by backend  *)
     close_out oc;
     close_in inchan
-  with e ->
-    close_out oc;
-    close_in inchan;
-    raise e
 
-let () =
+
+  with e -> (close_out oc; close_in inchan; raise e)
+
+let () = 
   let files = ref [] in
   Arg.parse
     [
@@ -163,13 +209,14 @@ let () =
       ( "-asml_output",
         Arg.String (fun s -> output_asml_file := Some s),
         "output asml file name" );
+        ("-reg_alloc", Arg.Set_string register_alloc_mode, "Register allocation mode: 'lc' (Linear Scan) or 'spill' (Full Spill)");
       ("-O",Arg.Int (fun i -> opt:= i),"Choose a level of Optimisation:\n\t0 = None (default),\n\t1 = remove any let var = integer that are useless and do add,sub,mul,div that have both integer as operand\n\t2 same as 1 but can swap var and imidiate value in add or mul if need it" )
     ]
     (fun s -> files := !files @ [ s ])
     (Printf.sprintf
        "usage: %s [-h/-help] [-v] [-verbose] [-type_only] [-parsing_only] \
-        [-asml_input_mode] [-asml] [-asml_output output_asml_file] [-o \
+        [-asml_input_mode] [-asml] [-asml_output output_asml_file] [-O optimisation_level_int ] [-reg_alloc (lc/spill)] [-o \
         output_file] filenames"
        Sys.argv.(0));
 
-  List.iter (fun f -> ignore (file f)) !files
+List.iter (fun f -> ignore (file f)) !files

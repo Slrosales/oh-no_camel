@@ -1,4 +1,5 @@
 module Asml = Core.Asml
+module Id = Core.Id
 
 let convert_ident (closure : Closure.ident) : Asml.ident_or_imm =
   match closure with INT i -> Asml.INT i | IDENT id -> Asml.IDENT id
