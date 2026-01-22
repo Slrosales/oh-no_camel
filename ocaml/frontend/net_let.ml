@@ -1,6 +1,6 @@
 module Id = Core.Id
 module Type = Core.Type
-module Knorm = K_normalization (* Helper alias *)
+module Knorm = K_normalization 
 
 type ident = INT of int | IDENT of Id.t
 
@@ -46,12 +46,12 @@ let rec to_string = function
   | IfLE (x, y, e1, e2) ->
       Printf.sprintf "if %s <= %s then\n  %s\nelse\n  %s" x (to_string_ident y)
         (to_string e1) (to_string e2)
-  | Let ((x, _), e1, e2) ->
-      Printf.sprintf "let %s = %s in\n%s" x (to_string e1) (to_string e2)
+  | Let ((x, type_x), e1, e2) ->
+      Printf.sprintf "let %s:%s = %s in\n%s" x (Type.to_string type_x) (to_string e1)  (to_string e2)
   | LetRec (fundef, e) ->
-      Printf.sprintf "let rec %s(%s) =\n  %s\nin\n%s" (fst fundef.name)
-        (String.concat ", " (List.map (fun (name, _) -> name) fundef.args))
-        (to_string fundef.body) (to_string e)
+      Printf.sprintf "let rec %s(%s):%s =\n  %s\nin\n%s" (fst fundef.name)
+        (String.concat ", " (List.map (fun (name, _) -> name) fundef.args)) (Type.to_string(snd fundef.name ))
+        (to_string fundef.body) (to_string e) 
   | App (f, args) -> Printf.sprintf "%s(%s)" f (String.concat ", " args)
   | Tuple vars -> Printf.sprintf "(%s)" (String.concat ", " vars)
   | LetTuple (vars, y, e) ->

@@ -88,7 +88,7 @@ let rec emit_exp oc = function
       ) arg_list;
       Printf.fprintf oc "\tbl %s\n" (Id.to_string func_name)
 
-  | A.Callclo (function_name, arguments_list) ->
+  | A.Callclo (_function_name, arguments_list) ->
       Printf.printf "Evaluating Closure\n";
 
       let number_of_arguments = ref 0 in
@@ -287,4 +287,5 @@ let rec generate_assembly oc prog =
 
       (* Exit Branch *)
       Printf.fprintf oc "\tbl	_min_caml_exit\n"
+  | _ -> Printf.eprintf "Float not implemented"
 
