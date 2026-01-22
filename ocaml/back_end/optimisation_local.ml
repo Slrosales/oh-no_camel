@@ -72,12 +72,11 @@ let operation_with_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(opt:
                       | IDENT id_op2 -> (let op2 = Hashtbl.find_opt var_assoctiation id_op2 in
                                         match (op1,op2) with
                                         | (None,None) -> (produce_operation op id ident,false)
-                                        | (None,Some i2) -> 
-                                        (produce_operation op id (INT i2),false)
+                                        | (None,Some i2) -> (produce_operation op id (INT i2),false)
                                         | (Some i1,None) -> if opt >= 2 then (
                                                             (produce_operation op id_op2 (INT i1) ),true)
                                                             else (produce_operation op id ident,false)
-                                        | (Some i1,Some i2) ->(apply_operation op i1 i2,false) )
+                                        | (Some i1,Some i2) ->(apply_operation op i1 i2,true) )
 
 let operation_without_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(var_assoctiation:(string,int)Hashtbl.t):(Asml.exp*bool)=
   let op1 = Hashtbl.find_opt var_assoctiation id in
@@ -95,7 +94,9 @@ let operation_without_switch (op:operande)(id:string)(ident:Asml.ident_or_imm)(v
 let rec fonction_optimization_recurrency_exe(exe:Asml.exp)(opt:int) (var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t):(Asml.exp*bool) =
   match exe with
   | Float f -> (Float f,false)
-  | Label id -> (Label id,false)
+  | Label id ->( match Hashtbl.find_opt var_assoctiation id with (*NEED TO BE REMOVE WHEN LABEL AND VAR ARE IDENTIFY*)
+                | None -> (Label id,false) 
+                | Some i -> (Ident (INT i)),true)
   | NOP -> (NOP,false) 
   | New ident -> (match ident with
     | IDENT id -> (match Hashtbl.find_opt var_assoctiation id with
@@ -106,9 +107,9 @@ let rec fonction_optimization_recurrency_exe(exe:Asml.exp)(opt:int) (var_assocti
   | Ident (ident) -> (
     match ident with
     | IDENT id -> (match Hashtbl.find_opt var_assoctiation id with
-                        | None -> (Ident(IDENT id),false)
+                        | None ->(Ident(IDENT id),false)
                         | Some i -> (Ident(INT i),true))
-    |INT i -> (Ident(INT i ),false)) 
+    | INT i -> (Ident(INT i ),false)) 
   | FNeg id ->  (FNeg id,false)
   | Neg id -> (Neg id,false)
   | FAdd (id1,id2) -> (FAdd(id1,id2),false)
@@ -183,19 +184,18 @@ and fonction_optimization_recurrency_asmt(asmt:Asml.asmt)(opt:int)(var_assoctiat
     let exp_ret,bool_exe = fonction_optimization_recurrency_exe exp opt var_assoctiation var_depedency in
     (EXP(exp_ret),bool_exe)
 
-let rec delete_useless_asmt (asmt:Asml.asmt)(var_depedency:(string,int)Hashtbl.t):Asml.asmt=
+let rec delete_useless_asmt (asmt:Asml.asmt)(var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t):Asml.asmt=
   match asmt with
-  | LET (id1,Call(id2,id_list),asmt) -> LET (id1,Call(id2,id_list),delete_useless_asmt asmt var_depedency)
-  | LET(id1,Callclo(id2,id_list),asmt) ->LET(id1,Callclo(id2,id_list),delete_useless_asmt asmt var_depedency)
-    
-  | LET (id,exp,asmt) -> (match Hashtbl.find_opt var_depedency id with
-                            
-                            | Some i when i=0 -> delete_useless_asmt asmt var_depedency
-                            | Some _  | None -> LET (id,exp,delete_useless_asmt asmt var_depedency))
+  | LET (id,exp,asmt) -> (match Hashtbl.find_opt var_assoctiation id with
+    | Some i -> (match Hashtbl.find_opt var_depedency id with 
+                            | Some i when i=0 -> delete_useless_asmt asmt var_assoctiation var_depedency
+                            | Some _  | None -> LET (id,exp,delete_useless_asmt asmt var_assoctiation var_depedency))
+   | None -> LET(id,exp,delete_useless_asmt asmt var_assoctiation var_depedency))
+  
   | EXP (exp) -> EXP(exp) 
 
-let delete_useless (asmt:Asml.asmt)(var_depedency:(string,int)Hashtbl.t):Asml.asmt=
-  delete_useless_asmt asmt var_depedency
+let delete_useless (asmt:Asml.asmt)(var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t):Asml.asmt=
+  delete_useless_asmt asmt var_assoctiation var_depedency
 
 let rec optimisation_recurrency_launcher (asmt:Asml.asmt)(opt:int)(var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t):Asml.asmt=
 
@@ -203,7 +203,8 @@ let rec optimisation_recurrency_launcher (asmt:Asml.asmt)(opt:int)(var_assoctiat
   let table_assotiation = Hashtbl.create 100 in
   let table_depedency = Hashtbl.create 100 in 
   fonction_optimization_init new_asmt table_assotiation table_depedency;
-  if bool_ret then( optimisation_recurrency_launcher new_asmt opt table_assotiation table_depedency) else (delete_useless new_asmt table_depedency)
+
+  if bool_ret then( optimisation_recurrency_launcher new_asmt opt table_assotiation table_depedency) else (delete_useless new_asmt var_assoctiation table_depedency)
 
 let fonction_optimization_lunch (asmt:Asml.asmt)(opt:int):Asml.asmt=
   let table_assotiation:(string,int)Hashtbl.t = Hashtbl.create 100  in
