@@ -1,0 +1,15 @@
+let _ =
+	let v1 = 5 in
+	let z.10 = v1 in
+	let v2 = 3 in
+	let w.11 = v2 in
+	let v3 = 5 in
+	let v4 = add z.10 v3 in
+	let x.12 = sub v4 w.11 in
+	let v5 = 3 in
+	let v6 = add z.10 v5 in
+	let y.13 = sub v6 w.11 in
+	let v7 = sub x.12 y.13 in
+	let v8 = add v7 z.10 in
+	let v9 = sub v8 w.11 in
+	call _min_caml_print_int v9
