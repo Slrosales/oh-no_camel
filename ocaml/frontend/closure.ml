@@ -196,8 +196,8 @@ let rec get_id_let (t:t):Id.t list =
     | Some id2 -> union [id;id2] union_t1_t2) 
   | Let _ -> []
   | App (_,id_list) -> id_list
-  | Tuple (id_list) -> id_list (*TODO when tuple added*)
-  | LetTuple (_id_list,_id,_) -> [] (*TODO when letTuple*) 
+  | Tuple (id_list) -> id_list 
+  | LetTuple (_id_list,_id,_) -> [] 
   | Get (id,ident) -> ( match add_reading_ident ident with
     | None -> [id]
     | Some id2 -> [id;id2])
