@@ -1,12 +1,12 @@
 let _ack.15 x.17 y.16 =
         let v1 = 0 in
-        ifLE x.17<=v1 then (
+        if x.17 <= v1 then (
         let v11 = 1 in
         add y.16 v11
 )
 else (
         let v2 = 0 in
-        ifLE y.16<=v2 then (
+        if y.16 <= v2 then (
         let v8 = 1 in
         let v9 = sub x.17 v8 in
         let v10 = 1 in
