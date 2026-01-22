@@ -19,7 +19,6 @@ module Asml_generation = Frontend.Asml_generation
 let output_file = ref None
 
 
-
 let version = "version :1.0.0"
 let verbose = ref false
 let type_check_only = ref false
@@ -129,14 +128,27 @@ let file f =
       print_endline "\n--- ASML ---";
       print_endline (Asml.to_string asml);
       exit 0);
-    if !verbose then (
-      print_endline "\n--- ASML ---";
-      print_endline (Asml.to_string asml));
-    if !output_asml then (
-      if !verbose then print_endline "\n--- WRITING ASML FILE ---";
-      match !output_asml_file with
-      | None -> Asml.write_file asml
-      | Some s -> Asml.write_file ~output_file:s asml);
+   
+(* Always dump ASML to ../test/ for backend *)
+if !verbose then (
+  print_endline "\n--- ASML ---";
+  print_endline (Asml.to_string asml)
+);
+
+let test_dir = "../Generated_asml" in
+if not (Sys.file_exists test_dir) then
+  Unix.mkdir test_dir 0o755;
+
+let asml_path =
+  let base = Filename.remove_extension (Filename.basename f) in
+  Filename.concat test_dir (base ^ ".asml")
+in
+
+Asml.write_file ~output_file:asml_path asml;
+Printf.printf "ASML automatically saved to %s\n\n" asml_path;
+
+
+
     Printf.printf "Ending: ASML\n\n";
 
     Printf.printf "Start optimization: \n\n";
