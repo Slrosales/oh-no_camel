@@ -29,8 +29,6 @@ let rec default_to_int t =
   | Type.Tuple elems -> Type.Tuple (List.map default_to_int elems)
   | Type.Array t -> Type.Array (default_to_int t)
   | Type.Var ({ contents = None } as r) ->
-      Format.eprintf
-        "uninstantiated type variable detected; defaulting to int\n";
       r := Some Type.Int;
       Type.Int
   | Type.Var ({ contents = Some t } as r) ->

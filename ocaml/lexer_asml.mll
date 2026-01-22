@@ -52,20 +52,17 @@ let print_token = function
 
 }
 
-
-
 let space = [' ' '\t' '\n' '\r']
 let digit = ['0'-'9']
 let lower = ['a'-'z']
 let upper = ['A'-'Z']
 
-let ident = "%self" | lower ( lower | upper | digit | '_')*
-let label = '_' ident 
+let ident = "%self" | '?'? lower ( lower | upper | digit | '_' | '.')*
+let label = '_' ( lower | upper | digit | '_' | '.')*
 
 rule token = parse
 | space+ { token lexbuf }
 
-(*key word*)
 | "apply_closure"
     { CALLCLO }
 | "call_closure"
@@ -133,8 +130,11 @@ rule token = parse
     { EQUAL }
 | '_'
     { UNDERSC }
-(*direct value*)
-(*Int and float*)
+| '.'
+    { DOT }
+| '?'
+    { QUESTION }
+
 |digit+ '.' digit+ as f {let t = FLOAT (float_of_string f) in (*print_token t;*)t }
 |digit+ as i { let t = INT (int_of_string i)in (*print_token t;*)t }
 |label as l {let t =  LABEL l in (*print_token t;*)t }
