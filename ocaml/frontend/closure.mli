@@ -1,5 +1,6 @@
 module Id = Core.Id
 module Type = Core.Type
+module Env_closure = Env_closure 
 
 type ident = INT of int | IDENT of Id.t
 
@@ -14,16 +15,18 @@ type t =
   | Div of Id.t * ident
   | IfEq of Id.t * ident * t * t
   | IfLE of Id.t * ident * t * t
-  | Let of (Id.t * Type.t) * t * t
+  | Let of Id.t * t * t
   | Var of Id.t
+  | New of ident
   | App of Id.t * Id.t list (*note we have now apply_direct(l, (x1 … xn))*)
+  | AppClo of Id.t * Id.t list
   | Tuple of Id.t list
-  | LetTuple of (Id.t * Type.t) list * Id.t * t
+  | LetTuple of Id.t  list * Id.t * t
   | Get of Id.t * ident
   | Put of Id.t * ident * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
-
+  
 and fundef = { name : Id.t; args : Id.t list; body : t }
 (*rename label by adding _ in front for exemple function f become '_f' *)
 

@@ -100,7 +100,7 @@ let rec f (e : Syntax.t) : t =
       LetRec ({ name = (x, t); args = list_args; body = e1_body }, e2_rest)
   | Syntax.App (e, args) -> (
       match e with
-      | Syntax.Var func_name when not (M.mem func_name !Typechecking.extenv) ->
+      | Syntax.Var func_name ->
           let ext_func =
             [
               "create_array";
