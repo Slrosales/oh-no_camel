@@ -48,7 +48,7 @@ let rec closure_rec (closure : Closure.t) : Asml.exp =
           convert_ident right_condition,
           closure_rec_let then_body,
           closure_rec_let else_body )
-  | App (t, t_list) -> Call (t, t_list)
+  | App (t, t_list) -> Call ("_"^t, t_list)
   | Tuple _t_list ->
       failwith "Not supposed to be printed. Tuple for closure_rec"
   | LetTuple (_type_list, _t1, _t2) ->
