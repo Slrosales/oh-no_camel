@@ -465,7 +465,7 @@ let rec apply_closure_on_let (t:t)(contexte:Id.t)(env:Env_closure.env)(already_a
     | None ->  AppClo(id,id_list)
     | Some _ ->
       (match Env_closure.get_var_from ~label_fun:id ~env:env with
-    | [] -> App("_"^id,id_list)
+    | [] -> App(id,id_list)
     | _ -> AppClo(id,id_list)))
   | _ -> t
 
@@ -534,7 +534,7 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
     | None ->  add_let_closure (id_list) (AppClo(id,id_list)) (contexte) (env) already_added 
     | Some _ ->
       (match Env_closure.get_var_from ~label_fun:id ~env:env with
-    | [] -> add_let_closure (id_list) (App("_"^id,id_list)) (contexte) (env) already_added
+    | [] -> add_let_closure (id_list) (App(id,id_list)) (contexte) (env) already_added
     | _ -> add_let_closure (id_list) (AppClo(id,id_list)) (contexte) (env) already_added
     ))
       )
@@ -555,7 +555,7 @@ and apply_closure_t (t:t)(contexte:Id.t)(env:Env_closure.env)(already_added:(str
     | Some id3 -> [id1;id2;id3] in
      add_let_closure list (Put(id1,ident,id2))(contexte)(env) already_added 
   | ExtArray (id) -> add_let_closure ([id]) (ExtArray(id)) contexte env already_added 
-  | ExtFunApp (id,id_list) ->add_let_closure (id_list) (ExtFunApp("_"^id,id_list)) contexte env already_added 
+  | ExtFunApp (id,id_list) ->add_let_closure (id_list) (ExtFunApp(id,id_list)) contexte env already_added 
   | AppClo (id,id_list) -> 
     initialise_closure_smart_list id_list env contexte already_added (
     ( add_let_closure (id_list) (AppClo(id,id_list)) (contexte) (env) already_added ))
