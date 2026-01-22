@@ -1,0 +1,18 @@
+let _gcd a b =
+  if a = b then (
+    a
+  ) else (
+    if a <= b then (
+      let b2 = sub b a in
+      call _gcd a b2
+    ) else (
+      let a2 = sub a b in
+      call _gcd a2 b
+    )
+  )
+
+let _ =
+  let x = 48 in
+  let y = 18 in
+  let res = call _gcd x y in
+  call _min_caml_print_int res

@@ -1,5 +1,0 @@
-let _ =
-  let a = 10 in
-  let b = 5 in
-  let sum = add a b in
-  call _min_caml_print_int sum

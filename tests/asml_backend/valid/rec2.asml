@@ -1,0 +1,17 @@
+let _fib n =
+  if n <= 1 then (
+    n
+  ) else (
+    let v1 = 1 in
+    let n1 = sub n v1 in
+    let f1 = call _fib n1 in
+    let v2 = 2 in
+    let n2 = sub n v2 in
+    let f2 = call _fib n2 in
+    add f1 f2
+  )
+
+let _ =
+  let x = 7 in
+  let res = call _fib x in
+  call _min_caml_print_int res

@@ -1,0 +1,14 @@
+let _sum n =
+  if n = 0 then (
+    0
+  ) else (
+    let v1 = 1 in
+    let n1 = sub n v1 in
+    let s1 = call _sum n1 in
+    add n s1
+  )
+
+let _ =
+  let input = 3 in
+  let res = call _sum input in
+  call _min_caml_print_int res

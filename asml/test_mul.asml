@@ -1,4 +1,0 @@
-let x = 7 in
-let y = 6 in
-let result = x * y in
-result

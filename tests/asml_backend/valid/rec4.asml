@@ -1,0 +1,31 @@
+let _sum_array arr i len =
+  if i = len then (
+    0
+  ) else (
+    let val = mem(arr + i) in
+    let v1 = 1 in
+    let next_i = add i v1 in
+    let rest = call _sum_array arr next_i len in
+    add val rest
+  )
+
+let _ =
+  let size = 5 in
+  let a = new size in
+  let i0 = 0 in
+  let i1 = 1 in
+  let i2 = 2 in
+  let i3 = 3 in
+  let i4 = 4 in
+  let v1 = 1 in
+  let v2 = 2 in
+  let v3 = 3 in
+  let v4 = 4 in
+  let v5 = 5 in
+  let dummy = mem(a + i0) <- v1 in
+  let dummy = mem(a + i1) <- v2 in
+  let dummy = mem(a + i2) <- v3 in
+  let dummy = mem(a + i3) <- v4 in
+  let dummy = mem(a + i4) <- v5 in
+  let res = call _sum_array a i0 size in
+  call _min_caml_print_int res

@@ -1,0 +1,17 @@
+let _fact n =
+  let c1 = 1 in
+  if n <= c1 then 
+    let res_base = 1 in
+    res_base
+  else 
+    let c1_sub = 1 in
+    let n_minus_1 = sub n c1_sub in
+    let recursive_res = call _fact n_minus_1 in
+    let res_mul = mul n recursive_res in
+    res_mul
+
+let _ =
+  let arg = 5 in
+  let result = call _fact arg in
+  let d1 = call _min_caml_print_int result in
+  call _min_caml_print_newline
