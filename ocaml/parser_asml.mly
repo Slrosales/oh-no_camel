@@ -39,8 +39,13 @@ open Asml
 %token RPAREN
 %token EOF
 %token NIL
-
-/*priority*/
+%token DOT          
+%token QUESTION    
+%token EOF
+%token CALL
+%token LET EQUAL IN
+%token MEM PLUS ASSIGN LPAREN RPAREN
+%token EOF
 
 %type <Asml.toplevel> toplevel
 %start toplevel
@@ -48,86 +53,61 @@ open Asml
 %%
 
 ident_or_imm:
-| INT
-    { INT ($1) }
-| IDENT
-    { IDENT ($1)}
+| INT   { INT ($1) }
+| IDENT { IDENT ($1)}
+
+label_or_ident:
+| LABEL { $1 }
+| IDENT { $1 }
 
 exp:
-| NOP
-    { NOP }
-| CALL LABEL formal_args
-    { Call ($2,$3) }
-| CALLCLO IDENT formal_args
-    { Callclo ($2,$3) }
-| INT
-    { Ident (INT ($1)) }
-| IDENT
-    { Ident (IDENT ($1)) }
-| LABEL
-    { Label ($1) }
-| NEG IDENT
-    { Neg ($2) }
-| FNEG IDENT
-    { FNeg ($2) }
-| FADD IDENT IDENT
-    { FAdd ($2,$3) }
-| FSUB IDENT IDENT
-    { FSub ($2,$3) }
-| FMUL IDENT IDENT
-    { FMul ($2,$3) }
-| FDIV IDENT IDENT
-    { FDiv ($2,$3) }
-| NEW ident_or_imm
-    { New ($2) }
-| ADD IDENT ident_or_imm 
-    { Add ($2,$3) }
-| SUB IDENT ident_or_imm
-    { Sub ($2,$3) }
-| MUL IDENT ident_or_imm
-    { Mul ($2,$3) }
-| DIV IDENT ident_or_imm
-    { Div ($2,$3) }
+| NOP { NOP }
+| INT { Ident (INT ($1)) }
+| IDENT { Ident (IDENT ($1)) }
+| LABEL { Label ($1) }
+| NEG IDENT { Neg ($2) }
+| ADD IDENT ident_or_imm { Add ($2,$3) }
+| SUB IDENT ident_or_imm { Sub ($2,$3) }
+| MUL IDENT ident_or_imm { Mul ($2,$3) }
+| DIV IDENT ident_or_imm { Div ($2,$3) }
+| IF IDENT EQUAL ident_or_imm THEN asmt ELSE asmt
+    { IfEQ ($2, $4, $6, $8) }
+| IF IDENT LE ident_or_imm THEN asmt ELSE asmt
+    { IfLE ($2, $4, $6, $8) }
+| IF IDENT GE ident_or_imm THEN asmt ELSE asmt
+    { IfGE ($2, $4, $6, $8) }
 | MEM LPAREN IDENT PLUS ident_or_imm RPAREN
     { MemLoad ($3,$5) }
 | MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT
-    { Memstore ($3,$5,$8)}
-| IF IDENT EQUAL ident_or_imm THEN asmt ELSE asmt
-    { IfEQ ($2,$4,$6,$8) }
-| IF IDENT LE ident_or_imm THEN asmt ELSE asmt
-    { IfLE ($2,$4,$6,$8) }
-| IF IDENT GE ident_or_imm THEN asmt ELSE asmt
-    { IfGE ($2,$4,$6,$8)}
-| IF IDENT FEQUAL IDENT THEN asmt ELSE asmt
-    { IfFEQ ($2,$4,$6,$8)}
-| IF IDENT FLE IDENT THEN asmt ELSE asmt
-    { IfFLE ($2,$4,$6,$8) }
+    { Memstore ($3,$5,$8) }
 
+| CALL label_or_ident formal_args
+    { Call ($2, $3) }
+| CALLCLO IDENT formal_args
+    { Callclo ($2, $3) }
+
+| NEW ident_or_imm { New ($2) }
 
 asmt:
 | LET IDENT EQUAL exp IN asmt
-    { LET ($2,$4,$6) }
-| LPAREN asmt RPAREN
-    { $2 }
-| exp
-    { EXP ($1) }
+    { LET ($2, $4, $6) }
+
+| LET UNDERSC EQUAL exp IN asmt
+    { LET ("_", $4, $6) } 
+
+| LPAREN asmt RPAREN { $2 }
+| exp { EXP ($1) }
 
 formal_args:
-| IDENT formal_args
-    { $1 :: $2 }
-| IDENT
-    {[$1]}
-| NIL
-    {[]}
+| IDENT formal_args { $1 :: $2 }
+| IDENT { [$1] }
+|  { [] } 
 
 fundefs:
 | LET UNDERSC EQUAL asmt
     { Main ($4) }
-| LET LABEL EQUAL FLOAT fundefs
-    { Letfloat ({ name = $2 ; float_let = $4 },$5) }
 | LET LABEL formal_args EQUAL asmt fundefs
-    { Function ({ name = $2 ; args = $3 ; body = $5 },$6) }
+    { Function ({ name = $2 ; args = $3 ; body = $5 }, $6) }
 
 toplevel:
-|  fundefs EOF
-    { $1 }
+| fundefs EOF { $1 }

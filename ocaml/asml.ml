@@ -76,13 +76,19 @@ let rec exp_to_string (exp:exp):string = match exp with
 | Div (id, ident_or_imm) -> "div " ^ Id.to_string id ^ " " ^ ident_to_string ident_or_imm
 | MemLoad (id , int) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int ^ ")"
 | Memstore (id , int1,ident_or_imm) -> "mem(" ^ Id.to_string id ^ "+" ^ ident_to_string int1 ^ ") <-" ^  Id.to_string ident_or_imm
-| IfEQ (id, ident_or_imm , asmt1 , asmt2) -> "ifEQ " ^ Id.to_string id ^ "=" ^ ident_to_string ident_or_imm ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
-| IfLE (id, ident_or_imm , asmt1 , asmt2) -> "ifLE " ^ Id.to_string id ^ "<=" ^ ident_to_string ident_or_imm ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
-| IfGE (id, ident_or_imm , asmt1 , asmt2) -> "ifGE " ^ Id.to_string id ^ ">=" ^ ident_to_string ident_or_imm ^ " then (\n" ^ asmt_to_string asmt1 ^ " \n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| IfEQ (id, ident_or_imm, asmt1, asmt2) -> 
+    "if " ^ Id.to_string id ^ " = " ^ ident_to_string ident_or_imm ^ 
+    " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| IfLE (id, ident_or_imm, asmt1, asmt2) -> 
+    "if " ^ Id.to_string id ^ " <= " ^ ident_to_string ident_or_imm ^ 
+    " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
+| IfGE (id, ident_or_imm, asmt1, asmt2) -> 
+    "if " ^ Id.to_string id ^ " >= " ^ ident_to_string ident_or_imm ^ 
+    " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
 | IfFLE (id, id2 , asmt1 , asmt2) -> "ifFLE " ^ Id.to_string id ^ "<=" ^ id2 ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
 | IfFEQ (id, id2 , asmt1 , asmt2) -> "ifFEQ " ^ Id.to_string id ^ "=" ^ id2 ^ " then (\n" ^ asmt_to_string asmt1 ^ "\n)\nelse (\n" ^ asmt_to_string asmt2 ^ "\n)"
-| Call (id , id_list) -> "call (" ^ Id.to_string id ^ "," ^ print_list_call id_list ^")"
-| Callclo (id , id_list) -> "apply_closure (" ^ Id.to_string id ^ "," ^ print_list_call id_list^")"
+| Call (id , id_list) -> "call " ^ Id.to_string id ^ " " ^ print_list_call id_list
+| Callclo (id , id_list) -> "apply_closure " ^ Id.to_string id ^ " " ^ print_list_call id_list
 and
 asmt_to_string (asmt:asmt):string = match asmt with
 | LET (id , exp , asmt) -> "\tlet " ^ Id.to_string id ^ " = " ^ exp_to_string exp ^ " in\n" ^ asmt_to_string asmt

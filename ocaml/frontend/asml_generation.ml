@@ -4,7 +4,6 @@ module Id = Core.Id
 let convert_ident (closure : Closure.ident) : Asml.ident_or_imm =
   match closure with INT i -> Asml.INT i | IDENT id -> Asml.IDENT id
 
-
 let rec mem_store pointer_tuple vars_to_store offset rest =
   match vars_to_store with
   | [] -> rest
@@ -23,6 +22,24 @@ let rec mem_load vars_to_bind pointer_source offset rest =
           Asml.MemLoad (pointer_source, Asml.INT offset),
           mem_load elems pointer_source (offset + 4) rest )
 
+let rename_external_label name =
+  let known_externals =
+    [
+      "create_array";
+      "create_float_array";
+      "print_int";
+      "print_newline";
+      "sin";
+      "cos";
+      "sqrt";
+      "abs_float";
+      "int_of_float";
+      "float_of_int";
+      "truncate";
+    ]
+  in
+  if List.mem name known_externals then "_min_caml_" ^ name else name
+
 let rec closure_rec (closure : Closure.t) : Asml.exp =
   match closure with
   | Unit -> NOP
@@ -32,7 +49,7 @@ let rec closure_rec (closure : Closure.t) : Asml.exp =
   | Neg t -> Neg t
   | Add (t1, t2) -> Add (t1, convert_ident t2) (*Can change if improvement*)
   | Sub (t1, t2) -> Sub (t1, convert_ident t2)
-  | Mul (t1, t2) -> Mul (t1, convert_ident t2) 
+  | Mul (t1, t2) -> Mul (t1, convert_ident t2)
   | Div (t1, t2) -> Div (t1, convert_ident t2)
   | Get (t1, t2) -> MemLoad (t1, convert_ident t2)
   | Put (t1, t2, t3) -> Memstore (t1, convert_ident t2, t3)
@@ -48,15 +65,16 @@ let rec closure_rec (closure : Closure.t) : Asml.exp =
           convert_ident right_condition,
           closure_rec_let then_body,
           closure_rec_let else_body )
-  | App (t, t_list) -> Call ("_"^t, t_list)
+  | App (t, t_list) -> Call ("_" ^ t, t_list)
   | Tuple _t_list ->
       failwith "Not supposed to be printed. Tuple for closure_rec"
   | LetTuple (_type_list, _t1, _t2) ->
       failwith "Not supposed to be printed. LetTuple for closure_rec"
   (* Accessing global array label, because 'create_array' is treat as ExtFuncApp in this point *)
   | ExtArray id -> Label id
-  | ExtFunApp (name, list_arg) -> Call (name, list_arg)
-  | New id -> New (convert_ident id)
+  | ExtFunApp (name, list_arg) -> 
+      let label = rename_external_label name in
+      Call (label, list_arg)  | New id -> New (convert_ident id)
   | AppClo (t, t_list) -> Callclo (t, t_list)
   | _ ->
       Printf.eprintf "Uknown command read in asml generation\n";
@@ -84,7 +102,7 @@ and closure_rec_let (closure : Closure.t) : Asml.asmt =
           mem_store temp args 0 (EXP (Asml.Ident (Asml.IDENT temp))) )
   (*Tuple destruction*)
   | LetTuple (vars, ptr, rest) -> mem_load vars ptr 0 (closure_rec_let rest)
-  | Let ((id), t1, t2) -> LET (id, closure_rec t1, closure_rec_let t2)
+  | Let (id, t1, t2) -> LET (id, closure_rec t1, closure_rec_let t2)
   | _ -> EXP (closure_rec closure)
 
 let rec creation_function (closure : Closure.all_fun) : Asml.fundef =
