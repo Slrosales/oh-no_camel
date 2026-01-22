@@ -148,7 +148,7 @@ _min_caml_print_int:
 heap_ptr:
     .word heap_start      @ Adress of next free byte
 heap_start:
-    .space 20000          @ 20k byte heap size (arbitrary)
+    .space 20000          @ 20k byte heap (Arbitrary value)
 
 
 
@@ -173,12 +173,14 @@ _min_caml_create_array:
     mov r4, r0              @ Save size
     mov r5, r1              @ Save the initial value in r5
     
+    @ Convert number of elements to bytes (elements * 4)
     lsl r0, r4, #2          @ Shift left by 2
     
     @ Allocate the memory
     bl _min_caml_alloc     
     
-    mov r2, #0              @ loop counter i = 0
+    @ Fill the array with the initial value
+    mov r2, #0              @ i = 0 (loop counter)
 .l_init_loop:
     cmp r2, r4              @ Check if i == size
     beq .l_init_done        @ If yes, exit loop

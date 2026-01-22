@@ -1,7 +1,0 @@
-let rec f x y =
-  let z = x + y in
-  let t = 2 in
-  t - z in
-let x = 0 in
-let y = 1 in
-f x y
