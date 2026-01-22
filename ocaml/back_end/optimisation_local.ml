@@ -187,7 +187,7 @@ and fonction_optimization_recurrency_asmt(asmt:Asml.asmt)(opt:int)(var_assoctiat
 let rec delete_useless_asmt (asmt:Asml.asmt)(var_assoctiation:(string,int)Hashtbl.t)(var_depedency:(string,int)Hashtbl.t):Asml.asmt=
   match asmt with
   | LET (id,exp,asmt) -> (match Hashtbl.find_opt var_assoctiation id with
-    | Some i -> (match Hashtbl.find_opt var_depedency id with 
+    | Some _ -> (match Hashtbl.find_opt var_depedency id with 
                             | Some i when i=0 -> delete_useless_asmt asmt var_assoctiation var_depedency
                             | Some _  | None -> LET (id,exp,delete_useless_asmt asmt var_assoctiation var_depedency))
    | None -> LET(id,exp,delete_useless_asmt asmt var_assoctiation var_depedency))
