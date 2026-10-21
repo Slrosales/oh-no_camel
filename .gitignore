@@ -3,3 +3,10 @@ dune
 oh-no_camel.opam
 _build
 .ocamlformat
+
+ocaml/_build/
+ocaml/mincamlc
+ocaml/*.s
+Generated_asml/
+ARM/*.arm
+ARM/*.o
